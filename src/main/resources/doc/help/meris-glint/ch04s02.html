@@ -1,0 +1,33 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4.2. 'Processing Parameters' Tab Pane</title><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="MERIS Glint Software User Manual"><link rel="up" href="ch04.html" title="Chapter 4. MERIS Glint Processor Interface"><link rel="prev" href="ch04.html" title="Chapter 4. MERIS Glint Processor Interface"><link rel="next" href="ch04s03.html" title="4.3. Control Buttons"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="sum.processor.procparameters"></a>4.2. 'Processing Parameters' Tab Pane</h2></div></div></div><div class="figure"><a name="figure.processor.ipftab"></a><div class="figure-contents"><div><img src="figures/procparamstab.png" alt="'Processing Parameters' Tab Pane"></div></div><p class="title"><b>Figure 4.2. 'Processing Parameters' Tab Pane</b></p></div><br class="figure-break">
+
+        This tab pane consists of the following components:
+        <div class="itemizedlist"><ul type="bullet"><li style="list-style-type: disc">
+                'Output TOSA reflectance': This checkbox toggles the output of TOSA reflectances.
+            </li><li style="list-style-type: disc">
+                'Output water leaving reflectance': This checkbox toggles the output of water leaving
+                reflectances.
+            </li><li style="list-style-type: disc">
+                'Output path reflectance': This checkbox toggles the output of path reflectances.
+            </li><li style="list-style-type: disc">
+                'Output transmittance': This checkbox toggles the output of downwelling irradiance
+                transmittances.
+            </li><li style="list-style-type: disc">
+                'Derive water leaving reflectance from path reflectance': This checkbox switches between
+                computation of water leaving reflectance from path reflectance and direct use of neural net
+                output.
+            </li><li style="list-style-type: disc">
+                'Land detection expression': The arithmetic expression used for land detection.
+            </li><li style="list-style-type: disc">
+                'MERIS net (leave empty to use default)': The file of the atmospheric net to be used instead
+                of the default neural net in case of AGC-only computation.
+            </li><li style="list-style-type: disc">
+                &#8217;Use FLINT value in neural net (requires AATSR L1b source product)&#8217;:
+                Toggles the usage of a FLINT value in AGC neural net. Note that this checkbox
+                is purely informative and always disabled. It is automatically triggered by the checkbox
+                'Create FLINT product...' in the I/O Parameters Tab Pane.
+            </li><li style="list-style-type: disc">
+                'FLINT net (leave empty to use default)': The file of the atmospheric net to be used instead
+                of the default neural net in case of both FLINT and AGC computation.
+                This component is enabled only if the checkbox 'Create FLINT product...' 
+                in the I/O Parameters Tab Pane has been selected, otherwise disabled.
+            </li></ul></div></div></body></html>

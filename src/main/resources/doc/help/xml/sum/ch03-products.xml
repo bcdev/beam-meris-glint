@@ -1,0 +1,81 @@
+<chapter id="sum.products">
+    <title>MERIS Glint Products</title>
+
+    <sect1 id="sum.products.input">
+        <title>Input Products</title>
+        <para>
+            The MERIS GLINT processor requires as input:
+            <itemizedlist mark='bullet'>
+                <listitem>
+                    MERIS L1b product (mandatory for both FLINT and AGC parts)
+                </listitem>
+                <listitem>
+                    AATSR L1b product (mandatory if a Glint value from the FLINT processor shall be used in
+                    the GGAC algorithm, otherwise not needed).
+                </listitem>
+            </itemizedlist>
+            The FLINT computation is performed for the overlapping areas of the MERIS/AATSR scenes. For
+            the areas covered by MERIS only, just the AGC computation is provided.
+        </para>
+    </sect1>
+
+    <sect1 id="sum.products.output">
+        <title>Output Products</title>
+
+        <sect2 id="sum.products.output.standard">
+            <title>Standard Quantities</title>
+            <para>
+                The GLINT output product provides the following standard quantities:
+
+                <itemizedlist mark='bullet'>
+                    <listitem>
+                        tau550 (Spectral aerosol optical depth at 550nm)
+                    </listitem>
+                    <listitem>
+                        tau778 (Spectral aerosol optical depth at 778nm)
+                    </listitem>
+                    <listitem>
+                        tau865 (Spectral aerosol optical depth at 865nm)
+                    </listitem>
+                    <listitem>
+                        btsm (Total supended matter scattering)
+                    </listitem>
+                    <listitem>
+                        atot (Absorption at 443 nm of all water constituents)
+                    </listitem>
+                    <listitem>
+                        ang443/865 (Aerosol Angstrom coefficient)
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </sect2>
+
+        <sect2 id="sum.products.output.standard">
+            <title>Optional Quantities</title>
+            <para>
+                The GLINT output product provides the following optional quantities (as defined by the user):
+
+                <itemizedlist mark='bullet'>
+                    <listitem>
+                        TOSA Reflectances (MERIS bands 1-10, 12, 13)
+                    </listitem>
+                    <listitem>
+                        Water Leaving Reflectances (MERIS bands 1-10, 12, 13)
+                    </listitem>
+                    <listitem>
+                        Path Reflectances (MERIS bands 1-10, 12, 13)
+                    </listitem>
+                    <listitem>
+                        Downwelling Irradiance Transmittances (MERIS bands 1-10, 12, 13)
+                    </listitem>
+                </itemizedlist>
+            </para>
+
+            <para>
+                The output product can be saved in standard BEAM DIMAP format.
+            </para>
+        </sect2>
+
+    </sect1>
+    
+</chapter>

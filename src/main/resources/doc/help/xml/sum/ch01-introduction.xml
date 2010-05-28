@@ -1,0 +1,100 @@
+<chapter id="sum.introduction">
+    <title>Introduction</title>
+
+    <sect1 id="sum.introduction.scope">
+        <title>Scope</title>
+        <para>This document is the software user manual (SUM) for the MERIS Glint processor.</para>
+    </sect1>
+
+    <sect1 id="sum.introduction.objectives">
+        <title>Objectives</title>
+        <para>
+            The scientific algorithms for glint correction have been implemented in a processor which is
+            available as a plugin for the BEAM toolbox. This user manual gives a description of the
+            software, i.e. how to install, how to use the graphical and command-line interfaces, and the
+            input/output products of the processor.
+        </para>
+        <para>
+            The GLINT processor basically consists of two main parts:
+            <itemizedlist mark='bullet'>
+                <listitem>
+                    FLINT: The algorithm to compute glint reflection at 865 nm from glint at SWIR and TIR
+                    bands of AATSR
+                </listitem>
+                <listitem>
+                    AGC: The atmosphere and glint correction algorithm
+                </listitem>
+			</itemizedlist>
+
+            The FLINT computation is optional and provides a 'FLINT value' (the Glint reflection) as additional
+            neural net input used by the AGC. The AGC can also be run standalone without FLINT input. The
+            FLINT algorithm requires overlapping MERIS/AATSR L1b products as input, the AGC only needs
+            a MERIS product.
+        </para>
+    </sect1>
+
+    <sect1 id="sum.introduction.readerLevel">
+        <title>Reader Level</title>
+		
+		<para>
+			This specification is mainly written for the following audiences:
+			<itemizedlist mark='bullet'>
+				<listitem>
+					BEAM Application users
+				</listitem>
+                <listitem>
+					MERIS scientists
+				</listitem>
+			</itemizedlist>	
+		</para>
+		<para>
+			This user manual specifications assume that the reader is familiar with basic concepts in
+			using the BEAM software and its integrated processors.
+		</para>
+    </sect1>
+
+    <sect1 id="sum.introduction.acronymsAndNomenclature">
+        <title>Acronyms and Nomenclature</title>
+        <sect2 id="sum.introduction.acronyms">
+            <title>Acronyms</title>
+			
+			<para>
+				<itemizedlist mark='bullet'>
+					<listitem>
+						BC - Brockmann Consult
+					</listitem>
+					<listitem>
+						ESA - European Space Agency
+					</listitem>
+					<listitem>
+						ESTEC -	European Space Technology and Research Centre
+					</listitem>
+					<listitem>
+						SUM - Software User Manual
+					</listitem>
+				</itemizedlist>	
+			</para>
+        </sect2>
+        <sect2 id="sum.introduction.nomenclature">
+            <title>Nomenclature</title>
+        </sect2>
+    </sect1>
+
+    <sect1 id="sum.introduction.referenceDocuments">
+        <title>Reference Documents</title>
+		
+		<para>
+			<itemizedlist mark='bullet'>
+				<listitem>
+                    [1] Preusker, R., and J. Fischer: Glint estimation in the NIR and SW infrared
+                    bands of MERIS and AATSR using AATSR
+                    measurements in the thermal infrared. FLINT ATBD, Version 0.9, 12 March 2009.
+                </listitem>
+                <listitem>
+                    [2] Doerffer, R.: Atmosphere and Glint Correction Project
+                    Atmospheric and Glint Correction. AGC ATBD, Version 1.0, 01 September 2008.
+				</listitem>
+			</itemizedlist>
+		</para>
+    </sect1>
+</chapter>

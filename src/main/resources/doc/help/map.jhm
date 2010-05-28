@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE map
+        PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Map Version 2.0//EN"
+        "http://java.sun.com/products/javahelp/map_2_0.dtd">
+
+<map version="2.0">
+
+    <mapID target="merisGlint" url="meris-glint/Meris-Glint.html"/>
+    <mapID target="merisGlintIndex" url="meris-glint/index.html"/>
+    <mapID target="merisGlintIntro" url="meris-glint/ch01.html"/>
+    <mapID target="merisGlintInstall" url="meris-glint/ch02.html"/>
+    <mapID target="merisGlintProducts" url="meris-glint/ch03.html"/>
+    <mapID target="merisGlintGui" url="meris-glint/ch04.html"/>
+
+</map>

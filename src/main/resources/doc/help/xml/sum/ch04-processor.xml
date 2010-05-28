@@ -1,0 +1,169 @@
+<chapter id="sum.processor">
+    <title>MERIS Glint Processor Interface</title>
+
+    The GLINT processor graphical user interface(GUI) is invoked if the Tools menu entry 'Glint
+    Correction (MERIS/(A)ATSR)...' is selected in Visat. The GLINT GUI is represented by one main
+    dialog, which consists of the following main components:
+
+    <sect1 id="sum.processor.io">
+        <title>I/O Parameters Tab Pane</title>
+
+        <figure id="figure.processor.iotab">
+			<title>I/O Parameters Tab Pane</title>
+			<graphic scale="60" fileref="figures/iotab.png"/>
+		</figure>
+
+        This tab pane consists of the following components:
+        <itemizedlist mark='bullet'>
+            <listitem>
+                 Source product file (MERIS L1b): Select the MERIS input product file by either typing the product path into the text
+                 filed or by pressing the file selection button to invoke a standard file dialog.
+            </listitem>
+             <listitem>
+                 Checkbox 'Create FLINT product from AATSR L1b and use as AGC input': Select
+                 this checkbox if FLINT algorithm shall be processed.
+            </listitem>
+            <listitem>
+                 Source product file (AATSR L1b): Select the AATSR input product file by either typing the product path into the text
+                 filed or by pressing the file selection button to invoke a standard file dialog.
+                 This component is enabled only if checkbox 'Create FLINT product...' is selected, otherwise
+                 disabled.
+            </listitem>
+            <listitem>
+                Output product file: Select the Glint output product file by either typing the product path into the text
+                filed or by pressing the file selection button to invoke a standard file dialog.
+            </listitem>
+            <listitem>
+                 Output product format and target directory:
+                 <itemizedlist mark='bullet'>
+                    <listitem>
+                        'Save as': If this checkbox is selected, the output product will be saved to disk.
+                    </listitem>
+                    <listitem>
+                        Output product format: Select one of the available output product formats.
+                    </listitem>
+                    <listitem>
+                        Select the output product directory by either typing the product path into the text
+                        filed or by pressing the file selection button to invoke a standard file dialog.
+                    </listitem>
+                 </itemizedlist>
+            </listitem>
+            <listitem>
+                'Open in Visat': If this checkbox is selected, the output product is opened in Visat
+                after successful processing.
+            </listitem>
+        </itemizedlist>
+    </sect1>
+
+    <sect1 id="sum.processor.procparameters">
+        <title>'Processing Parameters' Tab Pane</title>
+
+        <figure id="figure.processor.ipftab">
+			<title>'Processing Parameters' Tab Pane</title>
+			<graphic scale="60" fileref="figures/procparamstab.png"/>
+		</figure>
+
+        This tab pane consists of the following components:
+        <itemizedlist mark='bullet'>
+            <listitem>
+                'Output TOSA reflectance': This checkbox toggles the output of TOSA reflectances.
+            </listitem>
+            <listitem>
+                'Output water leaving reflectance': This checkbox toggles the output of water leaving
+                reflectances.
+            </listitem>
+            <listitem>
+                'Output path reflectance': This checkbox toggles the output of path reflectances.
+            </listitem>
+            <listitem>
+                'Output transmittance': This checkbox toggles the output of downwelling irradiance
+                transmittances.
+            </listitem>
+            <listitem>
+                'Derive water leaving reflectance from path reflectance': This checkbox switches between
+                computation of water leaving reflectance from path reflectance and direct use of neural net
+                output.
+            </listitem>
+            <listitem>
+                'Land detection expression': The arithmetic expression used for land detection.
+            </listitem>
+            <listitem>
+                'MERIS net (leave empty to use default)': The file of the atmospheric net to be used instead
+                of the default neural net in case of AGC-only computation.
+            </listitem>
+            <listitem>
+                ’Use FLINT value in neural net (requires AATSR L1b source product)’:
+                Toggles the usage of a FLINT value in AGC neural net. Note that this checkbox
+                is purely informative and always disabled. It is automatically triggered by the checkbox
+                'Create FLINT product...' in the I/O Parameters Tab Pane.
+            </listitem>
+            <listitem>
+                'FLINT net (leave empty to use default)': The file of the atmospheric net to be used instead
+                of the default neural net in case of both FLINT and AGC computation.
+                This component is enabled only if the checkbox 'Create FLINT product...' 
+                in the I/O Parameters Tab Pane has been selected, otherwise disabled.
+            </listitem>
+        </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="sum.processor.control">
+        <title>Control Buttons</title>
+
+        From all Glint Processor tab panes, the following control buttons can be accessed:
+        <itemizedlist mark='bullet'>
+            <listitem>
+                 'Run': If this button is clicked, the processor will start the computations.
+            </listitem>
+            <listitem>
+                 'Close': If this button is clicked, the Glint Processor dialog is closed.
+            </listitem>
+            <listitem>
+                 'Help': If this button is clicked, this manual is displayed as online help.
+            </listitem>
+        </itemizedlist>
+
+        <figure id="figure.processor.controlbuttons">
+			<title>Glint Processor control buttons</title>
+			<graphic scale="60" fileref="figures/controlbuttons.png"/>
+		</figure>
+
+    </sect1>
+
+    <sect1 id="sum.processor.gpt">
+        <title>Processing from command line</title>
+
+        Since the Glint Processor makes use of the BEAM graph processing framework, it can be
+        used also as a command line tool outside BEAM-VISAT. The graph processing is invoked
+        by the command
+        <itemizedlist mark='bullet'>
+            <listitem>
+                 ${BEAM-INSTALL-DIR}/bin/gpt
+            </listitem>
+        </itemizedlist>
+
+        To obtain general help on the praph processing, use the command
+        <itemizedlist mark='bullet'>
+            <listitem>
+                 ${BEAM-INSTALL-DIR}/bin/gpt -h
+            </listitem>
+        </itemizedlist>
+
+        Specific help on the MEPIX processor, can be obtained with
+        <itemizedlist mark='bullet'>
+            <listitem>
+                 ${BEAM-INSTALL-DIR}/bin/gpt -h Meris.GlintCorrection
+            </listitem>
+        </itemizedlist>
+        In this case, information on the usage and a list of all available parameters are given
+        (see <xref linkend="figure.processor.gpt" xrefstyle="select: label"/>).
+
+
+        <figure id="figure.processor.gpt">
+			<title>Glint Processor command line processing</title>
+			<graphic scale="40" fileref="figures/glint_gpt.png"/>
+		</figure>
+
+    </sect1>
+
+</chapter>

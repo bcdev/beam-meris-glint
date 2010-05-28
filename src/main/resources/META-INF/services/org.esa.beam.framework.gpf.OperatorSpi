@@ -1,0 +1,3 @@
+org.esa.beam.atmosphere.operator.GlintCorrectionOperator$Spi
+org.esa.beam.atmosphere.operator.ToaReflectanceOp$Spi
+org.esa.beam.atmosphere.operator.ToaReflectanceValidationOp$Spi
