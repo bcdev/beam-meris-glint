@@ -14,7 +14,7 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
 import java.text.MessageFormat;
@@ -80,7 +80,7 @@ public class ToaReflectanceOp extends Operator {
         bandMap.put(targetProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME),
                     sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME));
         
-        BandArithmeticOp bandArithmeticOp = BandArithmeticOp.createBooleanExpressionBand("l1_flags.INVALID",
+        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID",
                                                                                          sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
 

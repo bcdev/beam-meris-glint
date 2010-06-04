@@ -15,7 +15,7 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.annotations.Parameter;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -75,13 +75,13 @@ public class ToaReflectanceValidationOp extends Operator {
                                     sourceProduct.getSceneRasterHeight());
         final Product reflProduct = ToaReflectanceOp.create(sourceProduct).getTargetProduct();
 
-        BandArithmeticOp landWaterOp = BandArithmeticOp.createBooleanExpressionBand(landExpression, reflProduct);
+        BandMathsOp landWaterOp = BandMathsOp.createBooleanExpressionBand(landExpression, reflProduct);
         landWaterBand = landWaterOp.getTargetProduct().getBandAt(0);
 
-        BandArithmeticOp cloudIceOp = BandArithmeticOp.createBooleanExpressionBand(cloudIceExpression, reflProduct);
+        BandMathsOp cloudIceOp = BandMathsOp.createBooleanExpressionBand(cloudIceExpression, reflProduct);
         cloudIceBand = cloudIceOp.getTargetProduct().getBandAt(0);
 
-        BandArithmeticOp rlToaOorOp = BandArithmeticOp.createBooleanExpressionBand(rlToaOorExpression, reflProduct);
+        BandMathsOp rlToaOorOp = BandMathsOp.createBooleanExpressionBand(rlToaOorExpression, reflProduct);
         rlToaOorBand = rlToaOorOp.getTargetProduct().getBandAt(0);
 
         final FlagCoding flagCoding = new FlagCoding("rlToa_flags");

@@ -57,7 +57,7 @@ import java.util.Map;
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.1";
+    public static final String GLINT_CORRECTION_VERSION = "1.1.1";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME,

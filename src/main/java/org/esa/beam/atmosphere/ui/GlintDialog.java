@@ -1,34 +1,38 @@
 package org.esa.beam.atmosphere.ui;
 
+import com.bc.ceres.binding.Property;
+import com.bc.ceres.binding.PropertyContainer;
+import com.bc.ceres.binding.PropertyDescriptor;
 import com.bc.ceres.binding.ValidationException;
-import com.bc.ceres.binding.ValueContainer;
-import com.bc.ceres.binding.ValueDescriptor;
-import com.bc.ceres.binding.ValueModel;
-import com.bc.ceres.binding.swing.BindingContext;
-import com.bc.ceres.binding.swing.ValueEditor;
+import com.bc.ceres.binding.ValueSet;
 import com.bc.ceres.swing.TableLayout;
+import com.bc.ceres.swing.binding.BindingContext;
+import com.bc.ceres.swing.binding.PropertyPane;
+import com.bc.ceres.swing.selection.AbstractSelectionChangeListener;
+import com.bc.ceres.swing.selection.Selection;
+import com.bc.ceres.swing.selection.SelectionChangeEvent;
+import com.bc.ceres.swing.selection.SelectionChangeListener;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductFilter;
+import org.esa.beam.framework.datamodel.ProductNodeEvent;
+import org.esa.beam.framework.datamodel.ProductNodeListener;
+import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.annotations.ParameterDescriptorFactory;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.internal.RasterDataNodeValues;
 import org.esa.beam.framework.gpf.ui.SingleTargetProductDialog;
 import org.esa.beam.framework.gpf.ui.SourceProductSelector;
 import org.esa.beam.framework.gpf.ui.TargetProductSelectorModel;
-import org.esa.beam.framework.gpf.ui.ValueSetUpdater;
 import org.esa.beam.framework.ui.AppContext;
-import org.esa.beam.framework.ui.ValueEditorsPane;
-import org.esa.beam.framework.ui.application.SelectionChangeEvent;
-import org.esa.beam.framework.ui.application.SelectionChangeListener;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
-import javax.swing.JTextField;
 import javax.swing.JLabel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -42,8 +46,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.text.MessageFormat;
 
 /**
  * GLINT Dialog class
@@ -59,8 +61,10 @@ public class GlintDialog extends SingleTargetProductDialog {
     private JTabbedPane form;
     private String targetProductNameSuffix;
     private JCheckBox useFlintProductCheckBox;
-    private ValueContainer valueContainer;
+    private PropertyContainer propertyContainer;
     private JPanel flintNetPanel;
+    private PropertyDescriptor[] rasterDataNodeTypeProperties;
+    private ProductChangedHandler productChangedHandler;
 
     public static GlintDialog createDefaultDialog(String operatorName, AppContext appContext) {
         return new GlintDialog(operatorName, appContext, operatorName, null);
@@ -76,6 +80,8 @@ public class GlintDialog extends SingleTargetProductDialog {
             throw new IllegalArgumentException("operatorName");
         }
 
+        sourceProductSelectorList = new ArrayList<SourceProductSelector>(3);
+        sourceProductSelectorMap = new HashMap<Field, SourceProductSelector>(3);
         // Fetch source products
         initSourceProductSelectors(operatorSpi);
         if (sourceProductSelectorList.size() > 0) {
@@ -107,52 +113,46 @@ public class GlintDialog extends SingleTargetProductDialog {
         ioParametersPanel.add(getTargetProductSelector().createDefaultPanel());
         ioParametersPanel.add(tableLayout.createVerticalSpacer());
 
-        sourceProductSelectorList.get(0).addSelectionChangeListener(new SelectionChangeListener() {
-            @Override
-            public void selectionChanged(SelectionChangeEvent event) {
-                final Product selectedProduct = (Product) event.getSelection().getFirstElement();
-                final TargetProductSelectorModel targetProductSelectorModel = getTargetProductSelector().getModel();
-                targetProductSelectorModel.setProductName(selectedProduct.getName() + getTargetProductNameSuffix());
-            }
-        });
-
-        sourceProductSelectorList.get(1).addSelectionChangeListener(new SelectionChangeListener() {
-            @Override
-            public void selectionChanged(SelectionChangeEvent event) {
-                useFlintProductCheckBox.setSelected(true);
-            }
-        });
-
-
         this.form = new JTabbedPane();
         this.form.add("I/O Parameters", ioParametersPanel);
 
         ParameterDescriptorFactory parameterDescriptorFactory = new ParameterDescriptorFactory();
         parameterMap = new HashMap<String, Object>(17);
-        valueContainer = ValueContainer.createMapBacked(parameterMap,
+        propertyContainer = PropertyContainer.createMapBacked(parameterMap,
                                                                              operatorSpi.getOperatorClass(),
                                                                              parameterDescriptorFactory);
         try {
-            valueContainer.setDefaultValues();
+            propertyContainer.setDefaultValues();
         } catch (ValidationException e) {
             e.printStackTrace();
             showErrorDialog(e.getMessage());
         }
-        if (valueContainer.getModels().length > 0) {
-            BindingContext context = new BindingContext(valueContainer);
-            ValueEditorsPane parametersPane = new ValueEditorsPane(context);
-            final JPanel paremetersPanel = parametersPane.createPanel();
 
+        if (propertyContainer.getProperties().length > 0) {
+            if (!sourceProductSelectorList.isEmpty()) {
+                Property[] properties = propertyContainer.getProperties();
+                List<PropertyDescriptor> rdnTypeProperties = new ArrayList<PropertyDescriptor>(properties.length);
+                for (Property property : properties) {
+                    PropertyDescriptor parameterDescriptor = property.getDescriptor();
+                    if (parameterDescriptor.getAttribute(RasterDataNodeValues.ATTRIBUTE_NAME) != null) {
+                        rdnTypeProperties.add(parameterDescriptor);
+                    }
+                }
+                rasterDataNodeTypeProperties = rdnTypeProperties.toArray(new PropertyDescriptor[rdnTypeProperties.size()]);
+            }
+
+            PropertyPane parametersPane = new PropertyPane(propertyContainer);
+            final JPanel paremetersPanel = parametersPane.createPanel();
             Component[] components = paremetersPanel.getComponents();
 
-            for (int i=0; i<components.length-1; i++) {
+            for (int i = 0; i < components.length - 1; i++) {
                 if (components[i] instanceof JCheckBox && ((JCheckBox) components[i]).getText().startsWith("Use FLINT value")) {
                     JCheckBox useFlintCheckBox = (JCheckBox) paremetersPanel.getComponents()[i];
                     useFlintCheckBox.setEnabled(false);
                 }
                 if (components[i] instanceof JLabel && ((JLabel) components[i]).getText().startsWith("FLINT net")) {
-                    flintNetPanel = (JPanel) components[i+1];
-                    for (int j=0; j<flintNetPanel.getComponents().length; j++) {
+                    flintNetPanel = (JPanel) components[i + 1];
+                    for (int j = 0; j < flintNetPanel.getComponents().length; j++) {
                         flintNetPanel.getComponents()[j].setEnabled(false);
                     }
                 }
@@ -160,20 +160,20 @@ public class GlintDialog extends SingleTargetProductDialog {
 
             paremetersPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
             this.form.add("Processing Parameters", new JScrollPane(paremetersPanel));
-
-            for (final Field field : sourceProductSelectorMap.keySet()) {
-                final SourceProductSelector sourceProductSelector = sourceProductSelectorMap.get(field);
-                final String sourceAlias = field.getAnnotation(SourceProduct.class).alias();
-
-                for (ValueModel valueModel : valueContainer.getModels()) {
-                    ValueDescriptor parameterDescriptor = valueModel.getDescriptor();
-                    String sourceId = (String) parameterDescriptor.getProperty("sourceId");
-                    if (sourceId != null && (sourceId.equals(field.getName()) || sourceId.equals(sourceAlias))) {
-                        SelectionChangeListener valueSetUpdater = new ValueSetUpdater(parameterDescriptor);
-                        sourceProductSelector.addSelectionChangeListener(valueSetUpdater);
-                    }
+        }
+        if (!sourceProductSelectorList.isEmpty()) {
+            productChangedHandler = new ProductChangedHandler();
+            sourceProductSelectorList.get(0).addSelectionChangeListener(productChangedHandler);
+            sourceProductSelectorList.get(1).addSelectionChangeListener(new SelectionChangeListener() {
+                @Override
+                public void selectionChanged(SelectionChangeEvent event) {
+                    useFlintProductCheckBox.setSelected(true);
                 }
-            }
+
+                @Override
+                public void selectionContextChanged(SelectionChangeEvent event) {
+                }
+            });
         }
 
     }
@@ -211,8 +211,6 @@ public class GlintDialog extends SingleTargetProductDialog {
 	}
 
     private void initSourceProductSelectors(OperatorSpi operatorSpi) {
-        sourceProductSelectorList = new ArrayList<SourceProductSelector>(3);
-        sourceProductSelectorMap = new HashMap<Field, SourceProductSelector>(3);
         final Field[] fields = operatorSpi.getOperatorClass().getDeclaredFields();
         for (Field field : fields) {
             final SourceProduct annot = field.getAnnotation(SourceProduct.class);
@@ -226,42 +224,6 @@ public class GlintDialog extends SingleTargetProductDialog {
         }
     }
 
-    private void resetFlintProductSelector() {
-        for (Field field : sourceProductSelectorMap.keySet()) {
-            final SourceProductSelector selector = sourceProductSelectorMap.get(field);
-            if (selector != null) {
-                final SourceProduct annot = field.getAnnotation(SourceProduct.class);
-                if (annot.label() != null && annot.label().startsWith("AATSR")) {
-                    selector.getProductFileChooserButton().setEnabled(useFlintProductCheckBox.isSelected());
-                    selector.getProductNameComboBox().setEnabled(useFlintProductCheckBox.isSelected());
-                    selector.releaseProducts();
-                }
-            }
-        }
-        if (valueContainer != null)  {
-            for (ValueModel valueModel : valueContainer.getModels()) {
-                ValueDescriptor parameterDescriptor = valueModel.getDescriptor();
-                // set 'useFlint' parameter according to useFlintProductCheckBox:
-                if (valueModel.getDescriptor().getName().equals("useFlint")) {
-                    try {
-                        valueModel.setValue(new Boolean(useFlintProductCheckBox.isSelected()));
-                        if (flintNetPanel != null) {
-                            for (int j = 0; j < flintNetPanel.getComponents().length; j++) {
-                                flintNetPanel.getComponents()[j].setEnabled(useFlintProductCheckBox.isSelected());
-                            }
-                        }
-                    } catch (ValidationException e) {
-                        throw new OperatorException(e.getMessage());
-                    }
-                }
-            }
-        }
-        if (useFlintProductCheckBox.isSelected()) {
-            String flintInfoMessage = "The FLINT processor is a beta version and will be further improved in the\n" +
-                                      "frame of other projects. The current results should be interpreted with care.";
-            showSuppressibleInformationDialog(flintInfoMessage, "");
-        }
-    }
 
     private void setSourceProductSelectorLabels() {
         for (Field field : sourceProductSelectorMap.keySet()) {
@@ -279,7 +241,7 @@ public class GlintDialog extends SingleTargetProductDialog {
                 if (!annot.alias().isEmpty()) {
                     name = annot.alias();
                 }
-                label = ValueEditor.createDisplayName(name);
+                label = PropertyDescriptor.createDisplayName(name);
             }
             if (!label.endsWith(":")) {
                 label += ":";
@@ -300,6 +262,43 @@ public class GlintDialog extends SingleTargetProductDialog {
         }
     }
 
+    private void resetFlintProductSelector() {
+        for (Field field : sourceProductSelectorMap.keySet()) {
+            final SourceProductSelector selector = sourceProductSelectorMap.get(field);
+            if (selector != null) {
+                final SourceProduct annot = field.getAnnotation(SourceProduct.class);
+                if (annot.label() != null && annot.label().startsWith("AATSR")) {
+                    selector.getProductFileChooserButton().setEnabled(useFlintProductCheckBox.isSelected());
+                    selector.getProductNameComboBox().setEnabled(useFlintProductCheckBox.isSelected());
+                    selector.releaseProducts();
+                }
+            }
+        }
+        if (propertyContainer != null)  {
+            for (Property property : propertyContainer.getProperties()) {
+                // set 'useFlint' parameter according to useFlintProductCheckBox:
+                if (property.getDescriptor().getName().equals("useFlint")) {
+                    try {
+                        property.setValue(new Boolean(useFlintProductCheckBox.isSelected()));
+                        if (flintNetPanel != null) {
+                            for (int j = 0; j < flintNetPanel.getComponents().length; j++) {
+                                flintNetPanel.getComponents()[j].setEnabled(useFlintProductCheckBox.isSelected());
+                            }
+                        }
+                    } catch (ValidationException e) {
+                        throw new OperatorException(e.getMessage());
+                    }
+                }
+            }
+        }
+        if (useFlintProductCheckBox.isSelected()) {
+            String flintInfoMessage = "The FLINT processor is a beta version and will be further improved in the\n" +
+                                      "frame of other projects. The current results should be interpreted with care.";
+            showSuppressibleInformationDialog(flintInfoMessage, "");
+        }  
+    }
+
+
     @Override
     public int show() {
         initSourceProductSelectors();
@@ -309,6 +308,7 @@ public class GlintDialog extends SingleTargetProductDialog {
 
     @Override
     public void hide() {
+        productChangedHandler.releaseProduct();
         releaseSourceProductSelectors();
         super.hide();
     }
@@ -352,12 +352,12 @@ public class GlintDialog extends SingleTargetProductDialog {
     public void setTargetProductNameSuffix(String suffix) {
         targetProductNameSuffix = suffix;
     }
-
+    
     private static class AnnotatedSourceProductFilter implements ProductFilter {
 
         private final SourceProduct annot;
 
-        public AnnotatedSourceProductFilter(SourceProduct annot) {
+        private AnnotatedSourceProductFilter(SourceProduct annot) {
             this.annot = annot;
         }
 
@@ -376,5 +376,91 @@ public class GlintDialog extends SingleTargetProductDialog {
 
             return true;
         }
+    }
+
+
+    private class ProductChangedHandler extends AbstractSelectionChangeListener implements ProductNodeListener {
+
+        private Product currentProduct;
+
+        public void releaseProduct() {
+            if (currentProduct != null) {
+                currentProduct.removeProductNodeListener(this);
+                currentProduct = null;
+            }
+        }
+
+        @Override
+        public void selectionChanged(SelectionChangeEvent event) {
+            Selection selection = event.getSelection();
+            if (selection != null) {
+                final Product selectedProduct = (Product) selection.getSelectedValue();
+                if (selectedProduct != currentProduct) {
+                    if (currentProduct != null) {
+                        currentProduct.removeProductNodeListener(this);
+                    }
+                    currentProduct = selectedProduct;
+                    if (currentProduct != null) {
+                        currentProduct.addProductNodeListener(this);
+                    }
+                    updateTargetProductname();
+                    updateValueSets(currentProduct);
+                }
+            }
+        }
+
+        @Override
+        public void nodeAdded(ProductNodeEvent event) {
+            handleProductNodeEvent(event);
+        }
+
+        @Override
+        public void nodeChanged(ProductNodeEvent event) {
+            handleProductNodeEvent(event);
+        }
+
+        @Override
+        public void nodeDataChanged(ProductNodeEvent event) {
+            handleProductNodeEvent(event);
+        }
+
+        @Override
+        public void nodeRemoved(ProductNodeEvent event) {
+            handleProductNodeEvent(event);
+        }
+
+        private void updateTargetProductname() {
+            String productName = "";
+            if (currentProduct != null) {
+                productName = currentProduct.getName();
+            }
+            final TargetProductSelectorModel targetProductSelectorModel = getTargetProductSelector().getModel();
+            targetProductSelectorModel.setProductName(productName + getTargetProductNameSuffix());
+        }
+
+        private void handleProductNodeEvent(ProductNodeEvent event) {
+            updateValueSets(currentProduct);
+        }
+
+        private void updateValueSets(Product product) {
+            if (rasterDataNodeTypeProperties != null) {
+                for (PropertyDescriptor propertyDescriptor : rasterDataNodeTypeProperties) {
+                    updateValueSet(propertyDescriptor, product);
+                }
+            }
+        }
+    }
+
+    private static void updateValueSet(PropertyDescriptor propertyDescriptor, Product product) {
+        String[] values = new String[0];
+        if (product != null) {
+            Object object = propertyDescriptor.getAttribute(RasterDataNodeValues.ATTRIBUTE_NAME);
+            if (object != null) {
+                Class<? extends RasterDataNode> rasterDataNodeType = (Class<? extends RasterDataNode>) object;
+                boolean includeEmptyValue = !propertyDescriptor.isNotNull() && !propertyDescriptor.getType().isArray();
+                values = RasterDataNodeValues.getNames(product, rasterDataNodeType, includeEmptyValue);
+            }
+        }
+        propertyDescriptor.setValueSet(new ValueSet(values));
     }
 }

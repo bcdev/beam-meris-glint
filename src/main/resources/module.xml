@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>meris-glint-correction</symbolicName>
-    <version>0.2.1</version>
+    <version>1.1.1</version>
     <name>MERIS Glint Correction</name>
     <description>MERIS Glint Correction Tool</description>
 
