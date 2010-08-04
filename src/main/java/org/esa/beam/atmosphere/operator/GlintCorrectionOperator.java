@@ -299,7 +299,7 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
-                checkForCancelation(pm);
+                checkForCancellation(pm);
                 final int lineIndex = y * targetRectangle.width;
                 for (int x = 0; x < targetRectangle.getWidth(); x++) {
                     final int index = lineIndex + x;

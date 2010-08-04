@@ -110,7 +110,7 @@ public class ToaReflectanceOp extends Operator {
             final int height = targetTile.getHeight();
             final int width = targetTile.getWidth();
             for (int y = 0; y < height; y++) {
-                checkForCancelation(pm);
+                checkForCancellation(pm);
                 final int lineIndex = y * width;
                 for (int x = 0; x < width; x++) {
                     final int index = lineIndex + x;

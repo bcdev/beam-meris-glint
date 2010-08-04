@@ -115,7 +115,7 @@ public class ToaReflectanceValidationOp extends Operator {
 
 
             for (int y = 0; y < targetTile.getHeight(); y++) {
-                checkForCancelation(pm);
+                checkForCancellation(pm);
                 final int lineIndex = y * targetTile.getWidth();
 
                 for (int x = 0; x < targetTile.getWidth(); x++) {
