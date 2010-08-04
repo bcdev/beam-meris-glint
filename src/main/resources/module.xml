@@ -1,6 +1,6 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
-    <symbolicName>meris-glint-correction</symbolicName>
+    <symbolicName>beam-meris-glint</symbolicName>
     <version>1.1.2</version>
     <name>MERIS Glint Correction</name>
     <description>MERIS Glint Correction Tool</description>
@@ -31,7 +31,7 @@
         <optional>true</optional>
     </dependency>
     <dependency>
-        <module>glint-processor</module>
+        <module>flint-processor</module>
     </dependency>
 
     <categories>Processor,MERIS</categories>
