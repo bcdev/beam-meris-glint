@@ -3,7 +3,24 @@
     <symbolicName>beam-meris-glint</symbolicName>
     <version>1.1.2</version>
     <name>MERIS Glint Correction</name>
-    <description>This module comprises a MERIS Glint Correction Tool.</description>
+
+    <description>
+        <![CDATA[
+            <p>The MERIS/AATSR Glint Processor allows for the correction of the influence of the atmosphere and the
+            specularly reflected solar radiation (sun glint) on radiance spectra measured with MERIS and/or AATSR.</p>
+
+            <p>Algorithms: R. Doerffer from GKSS Research Centre, C. Brockmann from Brockmann Consult, J. Fischer et al. from Free University of Berlin</p>
+            <p>Software: M.Peters/O.Danne of Brockmann Consult</p>
+
+            <p>Documentation:</p>
+
+            <ul>
+                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_agc_atbd.pdf">Glint Correction with MERIS (ATBD 1)</a></li>
+                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_agc_atbd.pdf">Glint Correction with MERIS and AATSR (ATBD 2)</a></li>
+                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_sum.pdf">Software User Manual (SUM)</a></li>
+            </ul>
+    ]]>
+    </description>
 
     <vendor>Brockmann Consult GmbH</vendor>
     <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
