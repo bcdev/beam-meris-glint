@@ -170,13 +170,6 @@ public class GlintCorrectionOperator extends Operator {
                notEmpty = true, notNull = true)
     private String cloudIceExpression;
 
-//    @Parameter(defaultValue = "1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0",
-//               label = "Radiance adjustment factors", description = "Factor to adjust radiances")
-//    private double[] radianceAdjustmentFactors;
-    // do not offer as option any more (MB, CB):
-    private double[] radianceAdjustmentFactors =
-        new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-
     @Parameter(label = "MERIS net (full path required for other than default)",
                defaultValue = MERIS_ATMOSPHERIC_NET_NAME,
                description = "The file of the atmospheric net to be used instead of the default neural net.",
@@ -470,7 +463,6 @@ public class GlintCorrectionOperator extends Operator {
             pixelData.toa_radiance[i] = getScaledValue(sourceTileMap,
                                                        merisProduct.getRasterDataNode(spectralBandName),
                                                        index);
-            pixelData.toa_radiance[i] *= radianceAdjustmentFactors[i];
             pixelData.solar_flux[i] = merisProduct.getBand(spectralBandName).getSolarFlux();
         }
         return pixelData;
