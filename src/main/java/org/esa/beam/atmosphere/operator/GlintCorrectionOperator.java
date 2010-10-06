@@ -190,10 +190,8 @@ public class GlintCorrectionOperator extends Operator {
     private GlintCorrection glintCorrectionFlint;
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID",
                                                                  EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
-//    private static final String MERIS_ATMOSPHERIC_NET_NAME = "25x30x40_5365.2.net";
-    
+
     private static final String MERIS_ATMOSPHERIC_NET_NAME = "25x30x40_9164.3.net";
-    //    private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_3829.6_flint.net";
     private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
     private Band validationBand;
 
