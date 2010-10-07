@@ -17,9 +17,6 @@ public class GlintAction extends AbstractVisatAction {
     @Override
     public void actionPerformed(CommandEvent event) {
         final String version = GlintCorrectionOperator.GLINT_CORRECTION_VERSION;
-//        final DefaultSingleTargetProductDialog productDialog = new DefaultSingleTargetProductDialog(
-//                "Meris.GlintCorrection", getAppContext(),
-//                "MERIS/AATSR Glint Correction (AGC/FLINT) - v" + version, "merisGlint");
         final GlintDialog productDialog = new GlintDialog(
                 "Meris.GlintCorrection", getAppContext(),
                 "MERIS/AATSR Glint Correction (AGC/FLINT) - v" + version, "merisGlint");

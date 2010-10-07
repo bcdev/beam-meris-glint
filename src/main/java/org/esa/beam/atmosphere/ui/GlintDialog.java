@@ -84,7 +84,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         sourceProductSelectorMap = new HashMap<Field, SourceProductSelector>(3);
         // Fetch source products
         initSourceProductSelectors(operatorSpi);
-        if (sourceProductSelectorList.size() > 0) {
+        if (!sourceProductSelectorList.isEmpty()) {
             setSourceProductSelectorLabels();
             setSourceProductSelectorToolTipTexts();
         }
@@ -97,11 +97,6 @@ public class GlintDialog extends SingleTargetProductDialog {
 
         JPanel ioParametersPanel = new JPanel(tableLayout);
 
-//        for (SourceProductSelector selector : sourceProductSelectorList) {
-//            ioParametersPanel.add(selector.createDefaultPanel());
-//        }
-//        ioParametersPanel.add(createAatsrProductUsagePanel());
-//        ioParametersPanel.add(tableLayout.createVerticalSpacer());
         SourceProductSelector selectorMeris = sourceProductSelectorList.get(0);
         ioParametersPanel.add(selectorMeris.createDefaultPanel());
         
@@ -201,6 +196,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         panel.add(selectorAatsr.createDefaultPanel());
 
         ActionListener useFlintProductListener = new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 resetFlintProductSelector();
             }
@@ -279,7 +275,7 @@ public class GlintDialog extends SingleTargetProductDialog {
                 // set 'useFlint' parameter according to useFlintProductCheckBox:
                 if (property.getDescriptor().getName().equals("useFlint")) {
                     try {
-                        property.setValue(new Boolean(useFlintProductCheckBox.isSelected()));
+                        property.setValue(useFlintProductCheckBox.isSelected());
                         if (flintNetPanel != null) {
                             for (int j = 0; j < flintNetPanel.getComponents().length; j++) {
                                 flintNetPanel.getComponents()[j].setEnabled(useFlintProductCheckBox.isSelected());

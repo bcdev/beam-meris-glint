@@ -51,13 +51,13 @@ import java.util.Map;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "0.1",
+                  version = "1.2",
                   authors = "Marco Peters, Roland Doerffer",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.1.1";
+    public static final String GLINT_CORRECTION_VERSION = "1.2";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME,
