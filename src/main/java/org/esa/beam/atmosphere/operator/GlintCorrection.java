@@ -7,26 +7,13 @@ import java.util.Arrays;
 
 /**
  * Class providing the AGC Glint correction.
- *
- * @author Marco Peters, Olaf Danne
- * @version $Revision: 2703 $ $Date: 2010-01-21 13:51:07 +0100 (Do, 21 Jan 2010) $
  */
 public class GlintCorrection {
-    public static final double[] MERIS_WAVLENGTHS = {
+    public static final double[] MERIS_WAVELENGTHS = {
             412.3, 442.3, 489.7,
             509.6, 559.5, 619.4,
             664.3, 680.6, 708.1,
             753.1, 778.2, 864.6};
-    public static final double[] merband12 = {
-            412.3, 442.3, 489.7,
-            509.6, 559.5, 619.4,
-            664.3, 680.6, 708.1,
-            753.1, 778.2, 864.6};
-    public static final double[] merband9 = {
-            412.3, 442.3, 489.7,
-            509.6, 559.5, 619.4,
-            664.3, 680.6, 708.1};
-    public static final int[] merband12_index = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12};// absorption by ozone for MERIS bands 1-10, 12, 13
 
     public static final int LAND = 0x01;
     public static final int CLOUD_ICE = 0x02;
@@ -44,15 +31,10 @@ public class GlintCorrection {
 
 
     private NNffbpAlphaTabFast atmosphereNet;
-    private Tosa tosa;
-    private double[] atmoInnet;
 
 
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet) {
         this.atmosphereNet = atmosphereNet;
-        tosa = new Tosa();
-        tosa.init();
-        atmoInnet = new double[atmosphereNet.getInmin().length];
     }
 
     /**
@@ -64,14 +46,15 @@ public class GlintCorrection {
      */
     public GlintResult perform(PixelData pixel, boolean deriveRwFromPath) {
 
-        final double tetaViewDeg = pixel.satzen; /* viewing zenith angle */
-        final double tetaSunDeg = pixel.solzen; /* sun zenith angle */
-        final double tetaViewRad = Math.toRadians(tetaViewDeg);
-        final double tetaSunRad = Math.toRadians(tetaSunDeg);
-        final double aziDiffRad = Math.toRadians(getAzimuthDifference(pixel));
-        final double cosTetaViewRad = Math.cos(tetaViewRad);
-        final double cosTetaSunRad = Math.cos(tetaSunRad);
+        final double tetaViewSurfDeg = pixel.satzen; /* viewing zenith angle */
+        final double tetaViewSurfRad = Math.toRadians(tetaViewSurfDeg);
+        final double tetaSunSurfDeg = pixel.solzen; /* sun zenith angle */
+        final double tetaSunSurfRad = Math.toRadians(tetaSunSurfDeg);
+        final double aziDiffSurfRad = Math.toRadians(getAzimuthDifference(pixel));
+        final double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
+        final double cosTetaSunSurfRad = Math.cos(tetaSunSurfRad);
 
+        
 
         final GlintResult glintResult = new GlintResult();
 
@@ -91,14 +74,16 @@ public class GlintCorrection {
             return glintResult;
         }
 
-        final double[] rlTosa = tosa.perform(pixel, tetaViewRad, tetaSunRad, aziDiffRad);
+        Tosa tosa = new Tosa();
+        tosa.init();
+        final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad, aziDiffSurfRad);
         glintResult.setTosaReflec(rlTosa.clone());
 
         /* test if tosa reflectances are out of training range */
         if (!isTosaReflectanceValid(rlTosa, atmosphereNet)) {
             glintResult.raiseFlag(TOSA_OOR);
         }
-        if (tetaSunDeg > atmosphereNet.getInmax()[0] || tetaSunDeg < atmosphereNet.getInmin()[0]) {
+        if (tetaSunSurfDeg > atmosphereNet.getInmax()[0] || tetaSunSurfDeg < atmosphereNet.getInmin()[0]) {
             glintResult.raiseFlag(SOLZEN);
         }
 
@@ -115,11 +100,12 @@ public class GlintCorrection {
         double trans708 = H2O_COR_POLY[0] + H2O_COR_POLY[1] * x2 + H2O_COR_POLY[2] * x2 * x2 + H2O_COR_POLY[3] * x2 * x2 * x2;
         rlTosa[8] /= trans708;
 
-        atmoInnet[0] = tetaSunRad * 180.0 / 3.1416;   // replace by tetaSunDeg
+        double[] atmoInnet = new double[atmosphereNet.getInmin().length];
+        atmoInnet[0] = tetaSunSurfDeg;   // replace by tetaSunDeg
         // calculate xyz coordinates
-        atmoInnet[1] = -Math.sin(tetaViewRad) * Math.cos(aziDiffRad);
-        atmoInnet[2] = Math.abs(-Math.sin(tetaViewRad) * Math.sin(aziDiffRad));
-        atmoInnet[3] = cosTetaViewRad;
+        atmoInnet[1] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
+        atmoInnet[2] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
+        atmoInnet[3] = cosTetaViewSurfRad;
         for (int i = 0; i < rlTosa.length; i++) {
             atmoInnet[i + 4] = Math.log(rlTosa[i]);
         }
@@ -133,7 +119,7 @@ public class GlintCorrection {
         for (int i = 0; i < 12; i++) {
             atmoOutnet[i] = Math.exp(atmoOutnet[i]);
             atmoOutnet[i + 12] = Math.exp(atmoOutnet[i + 12]);
-            atmoOutnet[i + 24] = Math.exp(atmoOutnet[i + 24]) / cosTetaSunRad; //outnet is Ed_boa, not transmittance
+            atmoOutnet[i + 24] = Math.exp(atmoOutnet[i + 24]) / cosTetaSunSurfRad; //outnet is Ed_boa, not transmittance
         }
 
         final double[] transds = Arrays.copyOfRange(atmoOutnet, 24, 36);
@@ -144,7 +130,7 @@ public class GlintCorrection {
         for (int i = 0; i < reflec.length; i++) {
             if (deriveRwFromPath) {
                 final double v = transds[i]; /*probably a bug: / cosTetaSunRad **/
-                double transu = Math.exp(Math.log(v) * (cosTetaSunRad / cosTetaViewRad));
+                double transu = Math.exp(Math.log(v) * (cosTetaSunSurfRad / cosTetaViewSurfRad));
                 reflec[i] = (rlTosa[i] - rwPaths[i]) / transu * Math.PI;
             } else {
                 reflec[i] *= Math.PI;
@@ -154,7 +140,7 @@ public class GlintCorrection {
 
         /* compute angstrom coefficient from band 12 and 13 778 and 865 nm */
         double ang_443_865 = -Math.log(atmoOutnet[36] / atmoOutnet[39]) / Math.log(
-                MERIS_WAVLENGTHS[1] / MERIS_WAVLENGTHS[11]);
+                MERIS_WAVELENGTHS[1] / MERIS_WAVELENGTHS[11]);
         glintResult.setAngstrom(ang_443_865);
         glintResult.setTau550(atmoOutnet[37]);
         glintResult.setTau778(atmoOutnet[38]);

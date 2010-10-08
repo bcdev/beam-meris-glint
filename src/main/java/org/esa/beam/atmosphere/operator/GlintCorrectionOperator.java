@@ -13,6 +13,7 @@ import org.esa.beam.framework.datamodel.PixelPos;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
+import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
@@ -24,8 +25,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.glint.operators.FlintOp;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
-import org.esa.beam.util.Debug;
 import org.esa.beam.util.ProductUtils;
+import org.esa.beam.util.math.MathUtils;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -43,6 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Math.*;
+
 /**
  * Main operator for the AGC Glint correction.
  *
@@ -52,7 +55,7 @@ import java.util.Map;
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
                   version = "1.2",
-                  authors = "Marco Peters, Roland Doerffer",
+                  authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
@@ -120,7 +123,6 @@ public class GlintCorrectionOperator extends Operator {
     };
 
 
-//    private static final String RADIANCE_MERIS_BAND_NAME = "radiance_meris";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
 
     @SourceProduct(label = "MERIS L1b input product", description = "The MERIS L1b input product.")
@@ -130,8 +132,6 @@ public class GlintCorrectionOperator extends Operator {
                    optional = true)
     private Product aatsrProduct;
 
-//    @SourceProduct(label = "FLINT input product", description = "The output product of the FLINT operator.",
-//                   optional = true)
     private Product flintProduct;
 
     @TargetProduct(description = "The atmospheric corrected output product.")
@@ -186,8 +186,6 @@ public class GlintCorrectionOperator extends Operator {
                notNull = false)
     private File atmoNetFlintFile;
 
-    private GlintCorrection glintCorrectionMeris;
-    private GlintCorrection glintCorrectionFlint;
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID",
                                                                  EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
 
@@ -196,6 +194,12 @@ public class GlintCorrectionOperator extends Operator {
     private Band validationBand;
 
     public static final double NO_FLINT_VALUE = -1.0;
+    private double[] sunZenMit;
+    private double[] sunAziMit;
+    private double[] latMit;
+    private double[] lonMit;
+    private int pixelMid;
+    private String neuralNetString;
 
     @Override
     public void initialize() throws OperatorException {
@@ -211,7 +215,7 @@ public class GlintCorrectionOperator extends Operator {
             collocateInput.put("masterProduct", merisProduct);
             collocateInput.put("slaveProduct", aatsrProduct);
             Product collocateProduct =
-                GPF.createProduct(OperatorSpi.getOperatorAlias(CollocateOp.class), GPF.NO_PARAMS, collocateInput);
+                    GPF.createProduct(OperatorSpi.getOperatorAlias(CollocateOp.class), GPF.NO_PARAMS, collocateInput);
 
             // create FLINT product
             Map<String, Product> flintInput = new HashMap<String, Product>(1);
@@ -221,8 +225,10 @@ public class GlintCorrectionOperator extends Operator {
             validateFlintProduct(flintProduct);
         }
 
-        Product outputProduct = new Product(merisProduct.getName() + "_AC", "MERIS_L2_AC",
-                                            merisProduct.getSceneRasterWidth(), merisProduct.getSceneRasterHeight());
+        final int rasterHeight = merisProduct.getSceneRasterHeight();
+        final int rasterWidth = merisProduct.getSceneRasterWidth();
+
+        Product outputProduct = new Product(merisProduct.getName() + "_AC", "MERIS_L2_AC", rasterWidth, rasterHeight);
         ProductUtils.copyMetadata(merisProduct, outputProduct);
         ProductUtils.copyTiePointGrids(merisProduct, outputProduct);
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
@@ -240,41 +246,31 @@ public class GlintCorrectionOperator extends Operator {
                                                                                           cloudIceExpression);
         validationBand = validationOp.getTargetProduct().getBandAt(0);
 
-        InputStream isMeris = null;
-        InputStream isFlint = null;
-        try {
-            if (atmoNetMerisFile.getName().equals(MERIS_ATMOSPHERIC_NET_NAME)) {
-                isMeris = getClass().getResourceAsStream(MERIS_ATMOSPHERIC_NET_NAME);
-            } else {
-                try {
-                    isMeris = new FileInputStream(atmoNetMerisFile);
-                } catch (FileNotFoundException e) {
-                    throw new OperatorException(e);
-                }
-            }
-            glintCorrectionMeris = createAtmosphericCorrection(isMeris);
+        if (useFlint) {
+            neuralNetString = readNeralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
+        } else {
+            neuralNetString = readNeralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+        }
 
-            if (atmoNetFlintFile.getName().equals(FLINT_ATMOSPHERIC_NET_NAME)) {
-                isFlint = getClass().getResourceAsStream(FLINT_ATMOSPHERIC_NET_NAME);
-            } else {
-                try {
-                    isFlint = new FileInputStream(atmoNetFlintFile);
-                } catch (FileNotFoundException e) {
-                    throw new OperatorException(e);
-                }
-            }
-            glintCorrectionFlint = createAtmosphericCorrection(isFlint);
-        } finally {
-            try {
-                if (isMeris != null) {
-                    isMeris.close();
-                }
-                if (isFlint!= null) {
-                    isFlint.close();
-                }
-            } catch (IOException e) {
-                Debug.trace(e);
-            }
+
+        sunZenMit = new double[rasterHeight];
+        sunAziMit = new double[rasterHeight];
+        latMit = new double[rasterHeight];
+        lonMit = new double[rasterHeight];
+        pixelMid = MathUtils.ceilInt(merisProduct.getSceneRasterWidth() / 2.0);
+        final Rectangle centerColumn = new Rectangle(pixelMid, 0, 1, rasterHeight);
+
+        final TiePointGrid sunZenGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
+        final TiePointGrid sunAziGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
+        final TiePointGrid latGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
+        final TiePointGrid lonGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
+        sunZenGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunZenMit);
+        sunAziGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunAziMit);
+        latGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, latMit);
+        lonGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, lonMit);
+        for (int i = 0; i < latMit.length; i++) {
+            latMit[i] = Math.toRadians(latMit[i]);
+            lonMit[i] = Math.toRadians(lonMit[i]);
         }
 
         setTargetProduct(outputProduct);
@@ -284,10 +280,14 @@ public class GlintCorrectionOperator extends Operator {
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws
                                                                                                              OperatorException {
+        pm.beginTask("Correcting atmosphere...", targetRectangle.height);
         try {
-            pm.beginTask("Correcting atmosphere...", targetRectangle.height);
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
+
+            // todo - should create a template from NNffbpAlpphaTabFast which can be
+            // reused to initialize a NNffbpAlpphaTabFast
+            GlintCorrection glintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(neuralNetString));
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
                 checkForCancellation(pm);
@@ -297,12 +297,16 @@ public class GlintCorrectionOperator extends Operator {
                     final PixelData inputData = loadMerisPixelData(merisSampleDataMap, index);
                     final int pixelX = targetRectangle.x + x;
                     final int pixelY = targetRectangle.y + y;
+                    inputData.solzenMer = sunZenMit[pixelY];
+                    inputData.solaziMer = sunAziMit[pixelY];
+                    inputData.viewzenMer = inputData.satzen / 1.1364;
+
+                    inputData.viewaziMer = computeMerisFlightDirection(pixelX, pixelY);
+
                     inputData.flintValue = getFlintValue(pixelX, pixelY);
-                    GlintResult glintResult;
-                    if (!useFlint || !GlintCorrection.isFlintValueValid(inputData.flintValue)) {
-                        glintResult = glintCorrectionMeris.perform(inputData, deriveRwFromPath);
-                    } else {
-                        glintResult = glintCorrectionFlint.perform(inputData, deriveRwFromPath);
+
+                    GlintResult glintResult = glintCorrection.perform(inputData, deriveRwFromPath);
+                    if (useFlint && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     }
                     fillTargetSampleData(targetSampleDataMap, index, inputData, glintResult);
@@ -317,6 +321,20 @@ public class GlintCorrectionOperator extends Operator {
             pm.done();
         }
 
+    }
+
+    private double computeMerisFlightDirection(int pixelX, int pixelY) {
+        final double firstMidLon = lonMit[0];
+        final double firstMidLat = latMit[0];
+        final double pixMidLat = latMit[pixelY];
+        final double pixMidLon = lonMit[pixelY];
+
+        double lonDiff = firstMidLon - pixMidLon;
+        double cosG = sin(firstMidLat) * sin(pixMidLat) + cos(firstMidLat) * cos(pixMidLat) * cos(lonDiff);
+        double g = acos(cosG);
+        double sinAlpha = cos(firstMidLat) * sin(firstMidLon - pixMidLon) / sin(g);
+        double alpha = toDegrees(asin(sinAlpha));
+        return alpha + (pixelX < pixelMid ? 90.0 : 270.0);
     }
 
     private double getFlintValue(int pixelX, int pixelY) {
@@ -692,10 +710,20 @@ public class GlintCorrectionOperator extends Operator {
         }
     }
 
-    private static GlintCorrection createAtmosphericCorrection(InputStream neuralNetStream) {
-        BufferedReader reader = null;
+    private String readNeralNetString(String resourceNetName, File neuralNetFile) {
+        InputStream neuralNetStream;
+        if (neuralNetFile.getName().equals(resourceNetName)) {
+            neuralNetStream = getClass().getResourceAsStream(resourceNetName);
+        } else {
+            try {
+                neuralNetStream = new FileInputStream(neuralNetFile);
+            } catch (FileNotFoundException e) {
+                throw new OperatorException(e);
+            }
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(neuralNetStream));
         try {
-            reader = new BufferedReader(new InputStreamReader(neuralNetStream));
             String line = reader.readLine();
             final StringBuilder sb = new StringBuilder();
             while (line != null) {
@@ -703,14 +731,12 @@ public class GlintCorrectionOperator extends Operator {
                 sb.append(line).append('\n');
                 line = reader.readLine();
             }
-            return new GlintCorrection(new NNffbpAlphaTabFast(sb.toString()));
+            return sb.toString();
         } catch (IOException ioe) {
             throw new OperatorException("Could not initialize neural net", ioe);
         } finally {
             try {
-                if (reader != null) {
-                    reader.close();
-                }
+                reader.close();
             } catch (IOException ignore) {
             }
         }
