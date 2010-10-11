@@ -89,24 +89,28 @@ public class GlintCorrectionOperator extends Operator {
             "tosa_reflec_6", "tosa_reflec_7", "tosa_reflec_8", "tosa_reflec_9", "tosa_reflec_10",
             null,
             "tosa_reflec_12", "tosa_reflec_13",
+            null, null
     };
     private static final String[] REFLEC_BAND_NAMES = {
             "reflec_1", "reflec_2", "reflec_3", "reflec_4", "reflec_5",
             "reflec_6", "reflec_7", "reflec_8", "reflec_9", "reflec_10",
             null,
             "reflec_12", "reflec_13",
+            null, null
     };
     private static final String[] PATH_BAND_NAMES = {
             "path_1", "path_2", "path_3", "path_4", "path_5",
             "path_6", "path_7", "path_8", "path_9", "path_10",
             null,
             "path_12", "path_13",
+            null, null
     };
     private static final String[] TRANS_BAND_NAMES = {
             "trans_1", "trans_2", "trans_3", "trans_4", "trans_5",
             "trans_6", "trans_7", "trans_8", "trans_9", "trans_10",
             null,
             "trans_12", "trans_13",
+            null, null
     };
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
 
@@ -226,7 +230,7 @@ public class GlintCorrectionOperator extends Operator {
         final FlagCoding flagCoding = createAgcFlagCoding();
         agcFlagsBand.setSampleCoding(flagCoding);
         outputProduct.getFlagCodingGroup().add(flagCoding);
-        addBitmasks(outputProduct);
+        addMasks(outputProduct);
 
         final ToaReflectanceValidationOp validationOp = ToaReflectanceValidationOp.create(merisProduct,
                                                                                           landExpression,
@@ -234,27 +238,31 @@ public class GlintCorrectionOperator extends Operator {
         validationBand = validationOp.getTargetProduct().getBandAt(0);
 
         if (useFlint) {
-            neuralNetString = readNeralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
+            neuralNetString = readNeuralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
         } else {
-            neuralNetString = readNeralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+            neuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         }
 
 
-        sunZenMit = new double[rasterHeight];
-        sunAziMit = new double[rasterHeight];
-        latMit = new double[rasterHeight];
-        lonMit = new double[rasterHeight];
         pixelMid = MathUtils.ceilInt(merisProduct.getSceneRasterWidth() / 2.0);
         final Rectangle centerColumn = new Rectangle(pixelMid, 0, 1, rasterHeight);
 
+        sunZenMit = new double[rasterHeight];
         final TiePointGrid sunZenGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
-        final TiePointGrid sunAziGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
-        final TiePointGrid latGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
-        final TiePointGrid lonGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
         sunZenGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunZenMit);
+
+        sunAziMit = new double[rasterHeight];
+        final TiePointGrid sunAziGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
         sunAziGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunAziMit);
+
+        latMit = new double[rasterHeight];
+        final TiePointGrid latGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
         latGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, latMit);
+
+        lonMit = new double[rasterHeight];
+        final TiePointGrid lonGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
         lonGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, lonMit);
+
         for (int i = 0; i < latMit.length; i++) {
             latMit[i] = Math.toRadians(latMit[i]);
             lonMit[i] = Math.toRadians(lonMit[i]);
@@ -517,182 +525,102 @@ public class GlintCorrectionOperator extends Operator {
         final FlagCoding flagCoding = new FlagCoding(AGC_FLAG_BAND_NAME);
         flagCoding.setDescription("Atmosphere Correction - Flag Coding");
 
-        MetadataAttribute attribute = new MetadataAttribute("LAND", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.LAND);
-        attribute.setDescription("Land pixels");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("CLOUD_ICE", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.CLOUD_ICE);
-        attribute.setDescription("Cloud or ice pixels");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("ATC_OOR", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.ATC_OOR);
-        attribute.setDescription("Atmospheric correction out of range");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("TOA_OOR", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.TOA_OOR);
-        attribute.setDescription("TOA out of range");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("TOSA_OOR", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.TOSA_OOR);
-        attribute.setDescription("TOSA out of range");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("SOLZEN", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.SOLZEN);
-        attribute.setDescription("Large solar zenith angle");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("ANCIL", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.ANCIL);
-        attribute.setDescription("Missing/OOR auxiliary data");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("SUNGLINT", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.SUNGLINT);
-        attribute.setDescription("Risk of sun glint");
-        flagCoding.addAttribute(attribute);
-
-        attribute = new MetadataAttribute("HAS_FLINT", ProductData.TYPE_UINT16);
-        attribute.getData().setElemInt(GlintCorrection.HAS_FLINT);
-        attribute.setDescription("Flint value available (pixel covered by MERIS/AATSR)");
-        flagCoding.addAttribute(attribute);
+        addFlagAttribute(flagCoding, "LAND", "Land pixels", GlintCorrection.LAND);
+        addFlagAttribute(flagCoding, "CLOUD_ICE", "Cloud or ice pixels", GlintCorrection.CLOUD_ICE);
+        addFlagAttribute(flagCoding, "ATC_OOR", "Atmospheric correction out of range", GlintCorrection.ATC_OOR);
+        addFlagAttribute(flagCoding, "TOA_OOR", "TOA out of range", GlintCorrection.TOA_OOR);
+        addFlagAttribute(flagCoding, "TOSA_OOR", "TOSA out of range", GlintCorrection.TOSA_OOR);
+        addFlagAttribute(flagCoding, "SOLZEN", "Large solar zenith angle", GlintCorrection.SOLZEN);
+        addFlagAttribute(flagCoding, "ANCIL", "Missing/OOR auxiliary data", GlintCorrection.ANCIL);
+        addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
+        addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
+                         GlintCorrection.HAS_FLINT);
 
         return flagCoding;
+    }
 
+    private static void addFlagAttribute(FlagCoding flagCoding, String name, String description, int value) {
+        MetadataAttribute attribute = new MetadataAttribute(name, ProductData.TYPE_UINT16);
+        attribute.getData().setElemInt(value);
+        attribute.setDescription(description);
+        flagCoding.addAttribute(attribute);
     }
 
     private void addTargetBands(Product product) {
         if (outputTosa) {
-            for (int i = 0; i < TOSA_REFLEC_BAND_NAMES.length; i++) {
-                String bandName = TOSA_REFLEC_BAND_NAMES[i];
-                if (bandName != null) {
-                    final Band radBand = merisProduct.getBandAt(i);
-                    final Band band = product.addBand(bandName, ProductData.TYPE_FLOAT32);
-                    final float wavelength = radBand.getSpectralWavelength();
-                    band.setDescription(MessageFormat.format("TOSA Reflectance at {0} nm", wavelength));
-                    band.setSpectralWavelength(wavelength);
-                    band.setSpectralBandwidth(radBand.getSpectralBandwidth());
-                    band.setSpectralBandIndex(radBand.getSpectralBandIndex());
-                    band.setUnit("sr^-1");
-                    band.setValidPixelExpression(VALID_EXPRESSION);
-                }
-            }
+            addSpectralTargetBands(product, TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
         }
         if (outputReflec) {
-            for (int i = 0; i < REFLEC_BAND_NAMES.length; i++) {
-                String bandName = REFLEC_BAND_NAMES[i];
-                if (bandName != null) {
-                    final Band radBand = merisProduct.getBandAt(i);
-                    final Band band = product.addBand(bandName, ProductData.TYPE_FLOAT32);
-                    final float wavelength = radBand.getSpectralWavelength();
-                    band.setDescription(
-                            MessageFormat.format("Water leaving radiance reflectance at {0} nm", wavelength));
-                    band.setSpectralWavelength(wavelength);
-                    band.setSpectralBandwidth(radBand.getSpectralBandwidth());
-                    band.setSpectralBandIndex(radBand.getSpectralBandIndex());
-                    band.setUnit("sr^-1");
-                    band.setValidPixelExpression(VALID_EXPRESSION);
-                }
-            }
+            addSpectralTargetBands(product, REFLEC_BAND_NAMES, "Water leaving radiance reflectance at {0} nm", "sr^-1");
         }
         if (outputPath) {
-            for (int i = 0; i < PATH_BAND_NAMES.length; i++) {
-                String bandName = PATH_BAND_NAMES[i];
-                if (bandName != null) {
-                    final Band radBand = merisProduct.getBandAt(i);
-                    final Band band = product.addBand(bandName, ProductData.TYPE_FLOAT32);
-                    final float wavelength = radBand.getSpectralWavelength();
-                    band.setDescription(
-                            MessageFormat.format("Water leaving radiance reflectance path at {0} nm", wavelength));
-                    band.setSpectralWavelength(wavelength);
-                    band.setSpectralBandwidth(radBand.getSpectralBandwidth());
-                    band.setSpectralBandIndex(radBand.getSpectralBandIndex());
-                    band.setUnit("dxd");
-                    band.setValidPixelExpression(VALID_EXPRESSION);
-                }
-            }
+            addSpectralTargetBands(product, PATH_BAND_NAMES, "Water leaving radiance reflectance path at {0} nm",
+                                   "dxd");
         }
         if (outputTransmittance) {
-            for (int i = 0; i < TRANS_BAND_NAMES.length; i++) {
-                String bandName = TRANS_BAND_NAMES[i];
-                if (bandName != null) {
-                    final Band radBand = merisProduct.getBandAt(i);
-                    final Band band = product.addBand(bandName, ProductData.TYPE_FLOAT32);
-                    final float wavelength = radBand.getSpectralWavelength();
-                    band.setDescription(MessageFormat.format(
-                            "Downwelling irrediance transmittance (Ed_Boa/Ed_Tosa) at {0} nm", wavelength));
-                    band.setSpectralWavelength(wavelength);
-                    band.setSpectralBandwidth(radBand.getSpectralBandwidth());
-                    band.setSpectralBandIndex(radBand.getSpectralBandIndex());
-                    band.setUnit("dl");
-                    band.setValidPixelExpression(VALID_EXPRESSION);
-                }
-            }
+            addSpectralTargetBands(product, TRANS_BAND_NAMES,
+                                   "Downwelling irrediance transmittance (Ed_Boa/Ed_Tosa) at {0} nm", "dl");
         }
-        final Band tau550Band = product.addBand(TAU_550, ProductData.TYPE_FLOAT32);
-        tau550Band.setDescription("Spectral aerosol optical depth at 550");
-        tau550Band.setUnit("dl");
-        tau550Band.setValidPixelExpression(VALID_EXPRESSION);
-        final Band tau778Band = product.addBand(TAU_778, ProductData.TYPE_FLOAT32);
-        tau778Band.setDescription("Spectral aerosol optical depth at 778");
-        tau778Band.setUnit("dl");
-        tau778Band.setValidPixelExpression(VALID_EXPRESSION);
-        final Band tau865Band = product.addBand(TAU_865, ProductData.TYPE_FLOAT32);
-        tau865Band.setDescription("Spectral aerosol optical depth at 865");
-        tau865Band.setUnit("dl");
-        tau865Band.setValidPixelExpression(VALID_EXPRESSION);
+        addNonSpectralTargetBand(product, TAU_550, "Spectral aerosol optical depth at 550", "dl");
+        addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
+        addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
 
         if (flintProduct == null) {
-            final Band glintRatioBand = product.addBand(GLINT_RATIO, ProductData.TYPE_FLOAT32);
-            glintRatioBand.setDescription("Glint ratio");
-            glintRatioBand.setUnit("dl");
-            glintRatioBand.setValidPixelExpression(VALID_EXPRESSION);
+            addNonSpectralTargetBand(product, GLINT_RATIO, "Glint ratio", "dl");
         } else {
-            final Band flintBand = product.addBand(FLINT_VALUE, ProductData.TYPE_FLOAT32);
-            flintBand.setDescription("Flint value");
-            flintBand.setValidPixelExpression(VALID_EXPRESSION);
+            addNonSpectralTargetBand(product, FLINT_VALUE, "Flint value", "1/sr");
         }
 
-        final Band btsmBand = product.addBand(BTSM, ProductData.TYPE_FLOAT32);
-        btsmBand.setDescription("Total supended matter scattering");
-        btsmBand.setUnit("m^-1");
-        btsmBand.setValidPixelExpression(VALID_EXPRESSION);
-        final Band atotBand = product.addBand(ATOT, ProductData.TYPE_FLOAT32);
-        atotBand.setDescription("Absorption at 443 nm of all water constituents");
-        atotBand.setUnit("m^-1");
-        atotBand.setValidPixelExpression(VALID_EXPRESSION);
-        final Band angBand = product.addBand(ANG_443_865, ProductData.TYPE_FLOAT32);
-        angBand.setDescription("\"Aerosol Angstrom coefficient\"");
-        angBand.setUnit("dl");
-        angBand.setValidPixelExpression(VALID_EXPRESSION);
+        addNonSpectralTargetBand(product, BTSM, "Total supended matter scattering", "m^-1");
+        addNonSpectralTargetBand(product, ATOT, "Absorption at 443 nm of all water constituents", "m^-1");
+        addNonSpectralTargetBand(product, ANG_443_865, "\"Aerosol Angstrom coefficient\"", "dl");
     }
 
-    private static void addBitmasks(Product product) {
+    private Band addNonSpectralTargetBand(Product product, String name, String description, String unit) {
+        final Band band = product.addBand(name, ProductData.TYPE_FLOAT32);
+        band.setDescription(description);
+        band.setUnit(unit);
+        band.setValidPixelExpression(VALID_EXPRESSION);
+        return band;
+    }
+
+    private void addSpectralTargetBands(Product product, String[] bandNames, String descriptionPattern, String unit) {
+        for (int i = 0; i < EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
+            String bandName = bandNames[i];
+            if (bandName != null) {
+                final Band radBand = merisProduct.getBandAt(i);
+                final String descr = MessageFormat.format(descriptionPattern, radBand.getSpectralWavelength());
+                final Band band = addNonSpectralTargetBand(product, bandName, descr, unit);
+                ProductUtils.copySpectralBandProperties(radBand, band);
+            }
+        }
+    }
+
+    private static void addMasks(Product product) {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
-        maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE", Color.WHITE, 0.5f));
-        maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR", Color.ORANGE, 0.5f));
+        maskGroup.add(
+                createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE", Color.WHITE, 0.5f));
+        maskGroup.add(
+                createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR", Color.ORANGE,
+                           0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
         maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
         maskGroup.add(createMask(product, "ancil", "Missing/OOR auxiliary data", "agc_flags.ANCIL", Color.BLUE, 0.5f));
         maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
-        maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT", Color.RED, 0.5f));
+        maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",
+                                 Color.RED, 0.5f));
     }
 
     private static Mask createMask(Product product, String name, String description, String expression, Color color,
                                    float transparency) {
         return Mask.BandMathsType.create(name, description,
-                                                    product.getSceneRasterWidth(), product.getSceneRasterHeight(),
-                                                    expression, color, transparency);
+                                         product.getSceneRasterWidth(), product.getSceneRasterHeight(),
+                                         expression, color, transparency);
     }
 
-    private String readNeralNetString(String resourceNetName, File neuralNetFile) {
+    private String readNeuralNetString(String resourceNetName, File neuralNetFile) {
         InputStream neuralNetStream;
         if (neuralNetFile.getName().equals(resourceNetName)) {
             neuralNetStream = getClass().getResourceAsStream(resourceNetName);
