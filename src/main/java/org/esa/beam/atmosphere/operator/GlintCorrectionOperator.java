@@ -5,13 +5,14 @@ import org.esa.beam.PixelData;
 import org.esa.beam.collocation.CollocateOp;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
-import org.esa.beam.framework.datamodel.BitmaskDef;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
+import org.esa.beam.framework.datamodel.Mask;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.PixelPos;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.datamodel.ProductNodeGroup;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.GPF;
@@ -108,20 +109,6 @@ public class GlintCorrectionOperator extends Operator {
             "trans_12", "trans_13",
     };
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
-
-    private static final BitmaskDef[] BITMASK_DEFINITIONS = new BitmaskDef[]{
-            new BitmaskDef("agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f),
-            new BitmaskDef("cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE", Color.WHITE, 0.5f),
-            new BitmaskDef("atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR", Color.ORANGE, 0.5f),
-            new BitmaskDef("toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f),
-            new BitmaskDef("tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f),
-            new BitmaskDef("solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f),
-            new BitmaskDef("ancil", "Missing/OOR auxiliary data", "agc_flags.ANCIL", Color.BLUE, 0.5f),
-            new BitmaskDef("sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f),
-            new BitmaskDef("has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT", Color.RED, 0.5f),
-
-    };
-
 
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
 
@@ -285,16 +272,14 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
-            // todo - should create a template from NNffbpAlpphaTabFast which can be
-            // reused to initialize a NNffbpAlpphaTabFast
             GlintCorrection glintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(neuralNetString));
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
                 checkForCancellation(pm);
                 final int lineIndex = y * targetRectangle.width;
                 for (int x = 0; x < targetRectangle.getWidth(); x++) {
-                    final int index = lineIndex + x;
-                    final PixelData inputData = loadMerisPixelData(merisSampleDataMap, index);
+                    final int pixelIndex = lineIndex + x;
+                    final PixelData inputData = loadMerisPixelData(merisSampleDataMap, pixelIndex);
                     final int pixelX = targetRectangle.x + x;
                     final int pixelY = targetRectangle.y + y;
                     inputData.solzenMer = sunZenMit[pixelY];
@@ -309,7 +294,7 @@ public class GlintCorrectionOperator extends Operator {
                     if (useFlint && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     }
-                    fillTargetSampleData(targetSampleDataMap, index, inputData, glintResult);
+                    fillTargetSampleData(targetSampleDataMap, pixelIndex, inputData, glintResult);
                 }
                 pm.worked(1);
             }
@@ -375,73 +360,58 @@ public class GlintCorrectionOperator extends Operator {
 
     }
 
-    private void fillTargetSampleData(Map<String, ProductData> targetSampleData, int index, PixelData inputData,
+    private void fillTargetSampleData(Map<String, ProductData> targetSampleData, int pixelIndex, PixelData inputData,
                                       GlintResult glintResult) {
         final ProductData agcFlagTile = targetSampleData.get(AGC_FLAG_BAND_NAME);
-        agcFlagTile.setElemIntAt(index, glintResult.getFlag());
+        agcFlagTile.setElemIntAt(pixelIndex, glintResult.getFlag());
         final ProductData l1FlagTile = targetSampleData.get(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
-        l1FlagTile.setElemIntAt(index, inputData.l1Flag);
+        l1FlagTile.setElemIntAt(pixelIndex, inputData.l1Flag);
         final ProductData angTile = targetSampleData.get(ANG_443_865);
-        angTile.setElemDoubleAt(index, glintResult.getAngstrom());
+        angTile.setElemDoubleAt(pixelIndex, glintResult.getAngstrom());
         final ProductData tau550Tile = targetSampleData.get(TAU_550);
-        tau550Tile.setElemDoubleAt(index, glintResult.getTau550());
+        tau550Tile.setElemDoubleAt(pixelIndex, glintResult.getTau550());
         final ProductData tau778Tile = targetSampleData.get(TAU_778);
-        tau778Tile.setElemDoubleAt(index, glintResult.getTau778());
+        tau778Tile.setElemDoubleAt(pixelIndex, glintResult.getTau778());
         final ProductData tau865Tile = targetSampleData.get(TAU_865);
-        tau865Tile.setElemDoubleAt(index, glintResult.getTau865());
+        tau865Tile.setElemDoubleAt(pixelIndex, glintResult.getTau865());
         if (flintProduct == null) {
             // glint ratio available as output only for 'non-flint' case (RD, 28.10.09)
             final ProductData glintTile = targetSampleData.get(GLINT_RATIO);
-            glintTile.setElemDoubleAt(index, glintResult.getGlintRatio());
+            glintTile.setElemDoubleAt(pixelIndex, glintResult.getGlintRatio());
         } else {
             final ProductData flintTile = targetSampleData.get(FLINT_VALUE);
-            flintTile.setElemDoubleAt(index, inputData.flintValue);
+            flintTile.setElemDoubleAt(pixelIndex, inputData.flintValue);
         }
         final ProductData btsmTile = targetSampleData.get(BTSM);
-        btsmTile.setElemDoubleAt(index, glintResult.getBtsm());
+        btsmTile.setElemDoubleAt(pixelIndex, glintResult.getBtsm());
         final ProductData atotTile = targetSampleData.get(ATOT);
-        atotTile.setElemDoubleAt(index, glintResult.getAtot());
+        atotTile.setElemDoubleAt(pixelIndex, glintResult.getAtot());
+
         if (outputTosa) {
-            for (int i = 0; i < TOSA_REFLEC_BAND_NAMES.length; i++) {
-                final String bandName = TOSA_REFLEC_BAND_NAMES[i];
-                if (bandName != null) {
-                    int bandIndex = i > 10 ? i - 1 : i;
-                    final ProductData tile = targetSampleData.get(bandName);
-                    tile.setElemDoubleAt(index, glintResult.getTosaReflec()[bandIndex]);
-                }
-            }
+            fillTargetSample(TOSA_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getTosaReflec());
         }
         if (outputReflec) {
-            for (int i = 0; i < REFLEC_BAND_NAMES.length; i++) {
-                final String bandName = REFLEC_BAND_NAMES[i];
-                if (bandName != null) {
-                    int bandIndex = i > 10 ? i - 1 : i;
-                    final ProductData tile = targetSampleData.get(bandName);
-                    tile.setElemDoubleAt(index, glintResult.getReflec()[bandIndex]);
-                }
-            }
+            fillTargetSample(REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getReflec());
         }
         if (outputPath) {
-            for (int i = 0; i < PATH_BAND_NAMES.length; i++) {
-                final String bandName = PATH_BAND_NAMES[i];
-                if (bandName != null) {
-                    int bandIndex = i > 10 ? i - 1 : i;
-                    final ProductData tile = targetSampleData.get(bandName);
-                    tile.setElemDoubleAt(index, glintResult.getPath()[bandIndex]);
-                }
-            }
+            fillTargetSample(PATH_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getPath());
         }
         if (outputTransmittance) {
-            for (int i = 0; i < TRANS_BAND_NAMES.length; i++) {
-                final String bandName = TRANS_BAND_NAMES[i];
-                if (bandName != null) {
-                    int bandIndex = i > 10 ? i - 1 : i;
-                    final ProductData tile = targetSampleData.get(bandName);
-                    tile.setElemDoubleAt(index, glintResult.getTrans()[bandIndex]);
-                }
-            }
+            fillTargetSample(TRANS_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getTrans());
         }
 
+    }
+
+    private void fillTargetSample(String[] bandNames, int pixelIndex,
+                                  Map<String, ProductData> targetData, double[] values) {
+        for (int i = 0; i < bandNames.length; i++) {
+            final String bandName = bandNames[i];
+            if (bandName != null) {
+                int bandIndex = i > 10 ? i - 1 : i;
+                final ProductData tile = targetData.get(bandName);
+                tile.setElemDoubleAt(pixelIndex, values[bandIndex]);
+            }
+        }
     }
 
     private PixelData loadMerisPixelData(Map<String, ProductData> sourceTileMap, int index) {
@@ -703,11 +673,23 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private static void addBitmasks(Product product) {
-        for (BitmaskDef bitmaskDef : BITMASK_DEFINITIONS) {
-            // need a copy, cause the BitmaskDefs are otherwise disposed
-            // if the outputProduct gets disposed after processing
-            product.addBitmaskDef(bitmaskDef.createCopy());
-        }
+        final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
+        maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
+        maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE", Color.WHITE, 0.5f));
+        maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR", Color.ORANGE, 0.5f));
+        maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
+        maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
+        maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
+        maskGroup.add(createMask(product, "ancil", "Missing/OOR auxiliary data", "agc_flags.ANCIL", Color.BLUE, 0.5f));
+        maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
+        maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT", Color.RED, 0.5f));
+    }
+
+    private static Mask createMask(Product product, String name, String description, String expression, Color color,
+                                   float transparency) {
+        return Mask.BandMathsType.create(name, description,
+                                                    product.getSceneRasterWidth(), product.getSceneRasterHeight(),
+                                                    expression, color, transparency);
     }
 
     private String readNeralNetString(String resourceNetName, File neuralNetFile) {
