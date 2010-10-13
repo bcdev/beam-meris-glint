@@ -227,10 +227,10 @@ public class GlintCorrectionOperator extends Operator {
         addTargetBands(outputProduct);
         ProductUtils.copyFlagBands(merisProduct, outputProduct);
         Band agcFlagsBand = outputProduct.addBand(AGC_FLAG_BAND_NAME, ProductData.TYPE_INT16);
-        final FlagCoding flagCoding = createAgcFlagCoding();
-        agcFlagsBand.setSampleCoding(flagCoding);
-        outputProduct.getFlagCodingGroup().add(flagCoding);
-        addMasks(outputProduct);
+        final FlagCoding agcFlagCoding = createAgcFlagCoding();
+        agcFlagsBand.setSampleCoding(agcFlagCoding);
+        outputProduct.getFlagCodingGroup().add(agcFlagCoding);
+        addAgcMasks(outputProduct);
 
         final ToaReflectanceValidationOp validationOp = ToaReflectanceValidationOp.create(merisProduct,
                                                                                           landExpression,
@@ -592,7 +592,7 @@ public class GlintCorrectionOperator extends Operator {
         }
     }
 
-    private static void addMasks(Product product) {
+    private static void addAgcMasks(Product product) {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
         maskGroup.add(
