@@ -245,23 +245,11 @@ public class GlintCorrectionOperator extends Operator {
 
 
         pixelMid = MathUtils.ceilInt(merisProduct.getSceneRasterWidth() / 2.0);
-        final Rectangle centerColumn = new Rectangle(pixelMid, 0, 1, rasterHeight);
 
-        sunZenMit = new double[rasterHeight];
-        final TiePointGrid sunZenGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
-        sunZenGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunZenMit);
-
-        sunAziMit = new double[rasterHeight];
-        final TiePointGrid sunAziGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
-        sunAziGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, sunAziMit);
-
-        latMit = new double[rasterHeight];
-        final TiePointGrid latGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
-        latGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, latMit);
-
-        lonMit = new double[rasterHeight];
-        final TiePointGrid lonGrid = merisProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
-        lonGrid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, rasterHeight, lonMit);
+        sunZenMit = loadCenterGridColumnData(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
+        sunAziMit = loadCenterGridColumnData(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
+        latMit = loadCenterGridColumnData(EnvisatConstants.MERIS_LAT_DS_NAME);
+        lonMit = loadCenterGridColumnData(EnvisatConstants.MERIS_LON_DS_NAME);
 
         for (int i = 0; i < latMit.length; i++) {
             latMit[i] = Math.toRadians(latMit[i]);
@@ -270,7 +258,6 @@ public class GlintCorrectionOperator extends Operator {
 
         setTargetProduct(outputProduct);
     }
-
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws
@@ -420,6 +407,15 @@ public class GlintCorrectionOperator extends Operator {
                 tile.setElemDoubleAt(pixelIndex, values[bandIndex]);
             }
         }
+    }
+
+    private double[] loadCenterGridColumnData(String tpgName) {
+        final int rasterHeight = merisProduct.getSceneRasterHeight();
+        final double[] data = new double[rasterHeight];
+        final Rectangle centerColumn = new Rectangle(pixelMid, 0, 1, data.length);
+        final TiePointGrid grid = merisProduct.getTiePointGrid(tpgName);
+        grid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, data.length, data);
+        return data;
     }
 
     private PixelData loadMerisPixelData(Map<String, ProductData> sourceTileMap, int index) {
