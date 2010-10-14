@@ -3,7 +3,6 @@ package org.esa.beam.atmosphere.operator;
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.PixelData;
 import org.esa.beam.collocation.CollocateOp;
-import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
@@ -27,7 +26,6 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.glint.operators.FlintOp;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
 import org.esa.beam.util.ProductUtils;
-import org.esa.beam.util.math.MathUtils;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -46,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.*;
+import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
 
 /**
  * Main operator for the AGC Glint correction.
@@ -64,17 +63,17 @@ public class GlintCorrectionOperator extends Operator {
     public static final String GLINT_CORRECTION_VERSION = "1.2";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
-            EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME,
-            EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME,
-            EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME,
-            EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME,
-            EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME,
+            MERIS_SUN_ZENITH_DS_NAME,
+            MERIS_SUN_AZIMUTH_DS_NAME,
+            MERIS_VIEW_ZENITH_DS_NAME,
+            MERIS_VIEW_AZIMUTH_DS_NAME,
+            MERIS_DEM_ALTITUDE_DS_NAME,
             "atm_press",
             "ozone",
     };
 
     private static final String[] REQUIRED_AATSR_TPG_NAMES =
-            EnvisatConstants.AATSR_TIE_POINT_GRID_NAMES;
+            AATSR_TIE_POINT_GRID_NAMES;
 
     private static final String ANG_443_865 = "ang_443_865";
     private static final String TAU_550 = "tau_550";
@@ -178,7 +177,7 @@ public class GlintCorrectionOperator extends Operator {
     private File atmoNetFlintFile;
 
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID",
-                                                                 EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
+                                                                 MERIS_L1B_FLAGS_DS_NAME);
 
     private static final String MERIS_ATMOSPHERIC_NET_NAME = "25x30x40_9164.3.net";
     private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
@@ -189,7 +188,7 @@ public class GlintCorrectionOperator extends Operator {
     private double[] sunAziMit;
     private double[] latMit;
     private double[] lonMit;
-    private int pixelMid;
+    private int nadirColumn;
     private String neuralNetString;
 
     @Override
@@ -244,12 +243,12 @@ public class GlintCorrectionOperator extends Operator {
         }
 
 
-        pixelMid = MathUtils.ceilInt(merisProduct.getSceneRasterWidth() / 2.0);
+        nadirColumn = findNadirColumn();
 
-        sunZenMit = loadCenterGridColumnData(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
-        sunAziMit = loadCenterGridColumnData(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
-        latMit = loadCenterGridColumnData(EnvisatConstants.MERIS_LAT_DS_NAME);
-        lonMit = loadCenterGridColumnData(EnvisatConstants.MERIS_LON_DS_NAME);
+        sunZenMit = loadNadirGridColumnData(MERIS_SUN_ZENITH_DS_NAME);
+        sunAziMit = loadNadirGridColumnData(MERIS_SUN_AZIMUTH_DS_NAME);
+        latMit = loadNadirGridColumnData(MERIS_LAT_DS_NAME);
+        lonMit = loadNadirGridColumnData(MERIS_LON_DS_NAME);
 
         for (int i = 0; i < latMit.length; i++) {
             latMit[i] = Math.toRadians(latMit[i]);
@@ -257,6 +256,25 @@ public class GlintCorrectionOperator extends Operator {
         }
 
         setTargetProduct(outputProduct);
+    }
+
+    private int findNadirColumn() {
+        final int rasterWidth = merisProduct.getSceneRasterWidth();
+        final double[] data = new double[rasterWidth];
+        final Rectangle centerColumn = new Rectangle(0, 0, data.length, 1);
+        final TiePointGrid grid = merisProduct.getTiePointGrid(MERIS_VIEW_ZENITH_DS_NAME);
+        grid.getGeophysicalImage().getData(centerColumn).getPixels(0, 0, data.length, 1, data);
+        double minValue = data[0];
+        for (int i = 1; i < data.length; i++) {
+            if (data[i] < minValue) {
+                minValue = data[i];
+            }else {
+                // if values start to increase
+                // return the previous index
+                return i - 1;
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -314,7 +332,7 @@ public class GlintCorrectionOperator extends Operator {
         double g = acos(cosG);
         double sinAlpha = cos(firstMidLat) * sin(firstMidLon - pixMidLon) / sin(g);
         double alpha = toDegrees(asin(sinAlpha));
-        return alpha + (pixelX < pixelMid ? 90.0 : 270.0);
+        return alpha + (pixelX < nadirColumn ? 90.0 : 270.0);
     }
 
     private double getFlintValue(int pixelX, int pixelY) {
@@ -359,7 +377,7 @@ public class GlintCorrectionOperator extends Operator {
                                       GlintResult glintResult) {
         final ProductData agcFlagTile = targetSampleData.get(AGC_FLAG_BAND_NAME);
         agcFlagTile.setElemIntAt(pixelIndex, glintResult.getFlag());
-        final ProductData l1FlagTile = targetSampleData.get(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
+        final ProductData l1FlagTile = targetSampleData.get(MERIS_L1B_FLAGS_DS_NAME);
         l1FlagTile.setElemIntAt(pixelIndex, inputData.l1Flag);
         final ProductData angTile = targetSampleData.get(ANG_443_865);
         angTile.setElemDoubleAt(pixelIndex, glintResult.getAngstrom());
@@ -409,35 +427,35 @@ public class GlintCorrectionOperator extends Operator {
         }
     }
 
-    private double[] loadCenterGridColumnData(String tpgName) {
+    private double[] loadNadirGridColumnData(String tpgName) {
         final int rasterHeight = merisProduct.getSceneRasterHeight();
         final double[] data = new double[rasterHeight];
-        final Rectangle centerColumn = new Rectangle(pixelMid, 0, 1, data.length);
+        final Rectangle centerColumn = new Rectangle(nadirColumn, 0, 1, data.length);
         final TiePointGrid grid = merisProduct.getTiePointGrid(tpgName);
-        grid.getGeophysicalImage().getData(centerColumn).getPixels(pixelMid, 0, 1, data.length, data);
+        grid.getGeophysicalImage().getData(centerColumn).getPixels(nadirColumn, 0, 1, data.length, data);
         return data;
     }
 
     private PixelData loadMerisPixelData(Map<String, ProductData> sourceTileMap, int index) {
         final PixelData pixelData = new PixelData();
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
-        pixelData.l1Flag = sourceTileMap.get(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
+        pixelData.l1Flag = sourceTileMap.get(MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
 
         pixelData.solzen = getScaledValue(sourceTileMap,
-                                          merisProduct.getRasterDataNode(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME),
+                                          merisProduct.getRasterDataNode(MERIS_SUN_ZENITH_DS_NAME),
                                           index);
         pixelData.solazi = getScaledValue(sourceTileMap,
-                                          merisProduct.getRasterDataNode(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME),
+                                          merisProduct.getRasterDataNode(MERIS_SUN_AZIMUTH_DS_NAME),
                                           index);
         pixelData.satzen = getScaledValue(sourceTileMap,
-                                          merisProduct.getRasterDataNode(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME),
+                                          merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME),
                                           index);
         pixelData.satazi = getScaledValue(sourceTileMap,
-                                          merisProduct.getRasterDataNode(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME),
+                                          merisProduct.getRasterDataNode(MERIS_VIEW_AZIMUTH_DS_NAME),
                                           index);
         pixelData.altitude = getScaledValue(sourceTileMap,
                                             merisProduct.getRasterDataNode(
-                                                    EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME),
+                                                    MERIS_DEM_ALTITUDE_DS_NAME),
                                             index);
         pixelData.pressure = getScaledValue(sourceTileMap,
                                             merisProduct.getRasterDataNode("atm_press"),
@@ -446,10 +464,10 @@ public class GlintCorrectionOperator extends Operator {
                                          merisProduct.getRasterDataNode("ozone"),
                                          index);
 
-        pixelData.toa_radiance = new double[EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length];
-        pixelData.solar_flux = new double[EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length];
-        for (int i = 0; i < EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
-            String spectralBandName = EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[i];
+        pixelData.toa_radiance = new double[MERIS_L1B_SPECTRAL_BAND_NAMES.length];
+        pixelData.solar_flux = new double[MERIS_L1B_SPECTRAL_BAND_NAMES.length];
+        for (int i = 0; i < MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
+            String spectralBandName = MERIS_L1B_SPECTRAL_BAND_NAMES[i];
             pixelData.toa_radiance[i] = getScaledValue(sourceTileMap,
                                                        merisProduct.getRasterDataNode(spectralBandName),
                                                        index);
@@ -471,32 +489,32 @@ public class GlintCorrectionOperator extends Operator {
         final Tile validationTile = getSourceTile(validationBand, targetRectangle, ProgressMonitor.NULL);
         map.put(validationTile.getRasterDataNode().getName(), validationTile.getRawSamples());
 
-        final Tile l1FlagTile = getSourceTile(merisProduct.getRasterDataNode(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME),
+        final Tile l1FlagTile = getSourceTile(merisProduct.getRasterDataNode(MERIS_L1B_FLAGS_DS_NAME),
                                               targetRectangle, ProgressMonitor.NULL);
         map.put(l1FlagTile.getRasterDataNode().getName(), l1FlagTile.getRawSamples());
 
         final Tile solzenTile = getSourceTile(
-                merisProduct.getRasterDataNode(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), targetRectangle,
+                merisProduct.getRasterDataNode(MERIS_SUN_ZENITH_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(solzenTile.getRasterDataNode().getName(), solzenTile.getRawSamples());
 
         final Tile solaziTile = getSourceTile(
-                merisProduct.getRasterDataNode(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), targetRectangle,
+                merisProduct.getRasterDataNode(MERIS_SUN_AZIMUTH_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(solaziTile.getRasterDataNode().getName(), solaziTile.getRawSamples());
 
         final Tile satzenTile = getSourceTile(
-                merisProduct.getRasterDataNode(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), targetRectangle,
+                merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(satzenTile.getRasterDataNode().getName(), satzenTile.getRawSamples());
 
         final Tile sataziTile = getSourceTile(
-                merisProduct.getRasterDataNode(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), targetRectangle,
+                merisProduct.getRasterDataNode(MERIS_VIEW_AZIMUTH_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(sataziTile.getRasterDataNode().getName(), sataziTile.getRawSamples());
 
         final Tile altitudeTile = getSourceTile(
-                merisProduct.getRasterDataNode(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), targetRectangle,
+                merisProduct.getRasterDataNode(MERIS_DEM_ALTITUDE_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(altitudeTile.getRasterDataNode().getName(), altitudeTile.getRawSamples());
 
@@ -508,8 +526,8 @@ public class GlintCorrectionOperator extends Operator {
                                              ProgressMonitor.NULL);
         map.put(ozoneTile.getRasterDataNode().getName(), ozoneTile.getRawSamples());
 
-        for (int i = 0; i < EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
-            String spectralBandName = EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[i];
+        for (int i = 0; i < MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
+            String spectralBandName = MERIS_L1B_SPECTRAL_BAND_NAMES[i];
             final RasterDataNode dataNode = merisProduct.getRasterDataNode(spectralBandName);
             final Tile spectralTile = getSourceTile(dataNode, targetRectangle, ProgressMonitor.NULL);
             map.put(spectralTile.getRasterDataNode().getName(), spectralTile.getRawSamples());
@@ -581,7 +599,7 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private void addSpectralTargetBands(Product product, String[] bandNames, String descriptionPattern, String unit) {
-        for (int i = 0; i < EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
+        for (int i = 0; i < MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
             String bandName = bandNames[i];
             if (bandName != null) {
                 final Band radBand = merisProduct.getBandAt(i);
@@ -692,13 +710,13 @@ public class GlintCorrectionOperator extends Operator {
 
     private static String validateMerisProductBands(Product product) {
         List<String> sourceBandNameList = Arrays.asList(product.getBandNames());
-        for (String bandName : EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES) {
+        for (String bandName : MERIS_L1B_SPECTRAL_BAND_NAMES) {
             if (!sourceBandNameList.contains(bandName)) {
                 return bandName;
             }
         }
-        if (!sourceBandNameList.contains(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME)) {
-            return EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME;
+        if (!sourceBandNameList.contains(MERIS_L1B_FLAGS_DS_NAME)) {
+            return MERIS_L1B_FLAGS_DS_NAME;
         }
 
         return "";
@@ -706,7 +724,7 @@ public class GlintCorrectionOperator extends Operator {
 
     private static String validateAatsrProductBands(Product product) {
         List<String> sourceBandNameList = Arrays.asList(product.getBandNames());
-        for (String bandName : EnvisatConstants.AATSR_L1B_BAND_NAMES) {
+        for (String bandName : AATSR_L1B_BAND_NAMES) {
             if (!sourceBandNameList.contains(bandName)) {
                 return bandName;
             }
