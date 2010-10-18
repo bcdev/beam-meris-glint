@@ -401,6 +401,7 @@ public class GlintCorrectionOperator extends Operator {
                                       GlintResult glintResult) {
         final ProductData agcFlagTile = targetSampleData.get(AGC_FLAG_BAND_NAME);
         agcFlagTile.setElemIntAt(pixelIndex, glintResult.getFlag());
+        // todo - copy source image in initialize
         final ProductData l1FlagTile = targetSampleData.get(MERIS_L1B_FLAGS_DS_NAME);
         l1FlagTile.setElemIntAt(pixelIndex, inputData.l1Flag);
         final ProductData angTile = targetSampleData.get(ANG_443_865);
