@@ -288,6 +288,7 @@ public class GlintCorrectionOperator extends Operator {
                     final int pixelX = targetRectangle.x + x;
                     inputData.solzenMer = sunZenMit[pixelY];
                     inputData.solaziMer = sunAziMit[pixelY];
+                    // todo - different to breadboard line 159 in mer_wat_***01.c
                     inputData.viewzenMer = inputData.satzen / 1.1364;
 
                     inputData.viewaziMer = computeMerisFlightDirection(pixelX, alpha);

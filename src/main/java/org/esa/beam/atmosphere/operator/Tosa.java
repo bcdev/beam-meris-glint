@@ -70,6 +70,7 @@ class Tosa {
         double azi_diff_meris_rad = acos(cos(azi_view_meris_rad - azi_sun_meris_rad));
         double cos_azi_diff_meris = cos(azi_diff_meris_rad);
 
+        // todo - different to breadboard line 159 in mer_wat_***01.c
         double teta_view_meris_rad = teta_view_surf_rad / 1.1364;
         double teta_sun_meris_rad = toRadians(pixel.solzenMer);
 
