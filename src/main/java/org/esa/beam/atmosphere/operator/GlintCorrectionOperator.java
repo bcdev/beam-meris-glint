@@ -649,7 +649,7 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
         maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",
                                  Color.RED, 0.5f));
-        maskGroup.add(createMask(product, "invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+        maskGroup.add(createMask(product, "agc_invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                                  "agc_flags.INVALID", Color.RED, 0.5f));
     }
 
