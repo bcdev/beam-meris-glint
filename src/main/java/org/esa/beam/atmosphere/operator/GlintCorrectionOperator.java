@@ -63,6 +63,12 @@ public class GlintCorrectionOperator extends Operator {
 
     public static final String GLINT_CORRECTION_VERSION = "1.2";
 
+    private static final String AGC_FLAG_BAND_NAME = "agc_flags";
+    private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
+    private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
+    private static final String MERIS_ATMOSPHERIC_NET_NAME = "25x30x40_9164.3.net";
+    private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
+
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
             MERIS_SUN_AZIMUTH_DS_NAME,
@@ -73,8 +79,7 @@ public class GlintCorrectionOperator extends Operator {
             "ozone",
     };
 
-    private static final String[] REQUIRED_AATSR_TPG_NAMES =
-            AATSR_TIE_POINT_GRID_NAMES;
+    private static final String[] REQUIRED_AATSR_TPG_NAMES = AATSR_TIE_POINT_GRID_NAMES;
 
     private static final String ANG_443_865 = "ang_443_865";
     private static final String TAU_550 = "tau_550";
@@ -112,9 +117,6 @@ public class GlintCorrectionOperator extends Operator {
             "trans_12", "trans_13",
             null, null
     };
-    private static final String AGC_FLAG_BAND_NAME = "agc_flags";
-
-    private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
 
     @SourceProduct(label = "MERIS L1b input product", description = "The MERIS L1b input product.")
     private Product merisProduct;
@@ -149,13 +151,13 @@ public class GlintCorrectionOperator extends Operator {
                description = "Switch between computation of water leaving reflectance from path reflectance and direct use of neural net output.")
     private boolean deriveRwFromPath;
 
-    @Parameter(defaultValue = "toa_reflec_10 > toa_reflec_6 AND toa_reflec_13 > 0.1",
+    @Parameter(defaultValue = "toa_reflec_10 > toa_reflec_6 AND toa_reflec_13 > 0.0475",
                label = "Land detection expression",
                description = "The arithmetic expression used for land detection.",
                notEmpty = true, notNull = true)
     private String landExpression;
 
-    @Parameter(defaultValue = "toa_reflec_14 > 0.3",
+    @Parameter(defaultValue = "toa_reflec_14 > 0.2",
                label = "Cloud/Ice detection expression",
                description = "The arithmetic expression used for cloud/ice detection.",
                notEmpty = true, notNull = true)
@@ -177,11 +179,6 @@ public class GlintCorrectionOperator extends Operator {
                notNull = false)
     private File atmoNetFlintFile;
 
-    private static final String VALID_EXPRESSION = String.format("!%s.INVALID",
-                                                                 MERIS_L1B_FLAGS_DS_NAME);
-
-    private static final String MERIS_ATMOSPHERIC_NET_NAME = "25x30x40_9164.3.net";
-    private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
     private Band validationBand;
 
     public static final double NO_FLINT_VALUE = -1.0;
@@ -226,7 +223,7 @@ public class GlintCorrectionOperator extends Operator {
 
         addTargetBands(outputProduct);
         ProductUtils.copyFlagBands(merisProduct, outputProduct);
-        Band agcFlagsBand = outputProduct.addBand(AGC_FLAG_BAND_NAME, ProductData.TYPE_INT16);
+        Band agcFlagsBand = outputProduct.addBand(AGC_FLAG_BAND_NAME, ProductData.TYPE_UINT16);
         final FlagCoding agcFlagCoding = createAgcFlagCoding();
         agcFlagsBand.setSampleCoding(agcFlagCoding);
         outputProduct.getFlagCodingGroup().add(agcFlagCoding);
@@ -575,6 +572,8 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
         addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
                          GlintCorrection.HAS_FLINT);
+        addFlagAttribute(flagCoding, "INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+                         GlintCorrection.INVALID);
 
         return flagCoding;
     }
@@ -639,11 +638,10 @@ public class GlintCorrectionOperator extends Operator {
     private static void addAgcMasks(Product product) {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
-        maskGroup.add(
-                createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE", Color.WHITE, 0.5f));
-        maskGroup.add(
-                createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR", Color.ORANGE,
-                           0.5f));
+        maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE",
+                                 Color.WHITE, 0.5f));
+        maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR",
+                                 Color.ORANGE, 0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
         maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
@@ -651,6 +649,8 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
         maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",
                                  Color.RED, 0.5f));
+        maskGroup.add(createMask(product, "invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+                                 "agc_flags.INVALID", Color.RED, 0.5f));
     }
 
     private static Mask createMask(Product product, String name, String description, String expression, Color color,

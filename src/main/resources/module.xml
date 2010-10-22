@@ -32,6 +32,8 @@
         <![CDATA[
         <p>Changes in version 1.2<br/>
         - Made Glint Correction thread safe
+        - introduce flag agc_flags.INVALID combining agc_flags.LAND, agc_flags.CLOUD_ICE and l1_flags.INVALID
+        - better default expressions for land and cloud/ice detection 
         </p>
         ]]>
     </changelog>

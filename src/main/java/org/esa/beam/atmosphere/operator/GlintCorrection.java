@@ -22,8 +22,11 @@ public class GlintCorrection {
     public static final int TOSA_OOR = 0x10;
     public static final int SOLZEN = 0x20;
     public static final int ANCIL = 0x40;
-    public static final int SUNGLINT = 0x80;
+    public static final int SUNGLINT = 0x08;
     public static final int HAS_FLINT = 0x100;
+    public static final int INVALID = 0x8000;  // LAND || CLOUD_ICE || l1_flags.INVALID
+
+    public static final int L1_INVALID_FLAG = 0x80;
 
     private static final double MAX_TAU_FACTOR = 0.84;
     private static final double[] H2O_COR_POLY = new double[]{
@@ -70,7 +73,9 @@ public class GlintCorrection {
             glintResult.raiseFlag(TOA_OOR);
         }
 
-        if((glintResult.getFlag() & LAND) == LAND || (glintResult.getFlag() & CLOUD_ICE) == CLOUD_ICE) {
+        if((glintResult.getFlag() & LAND) == LAND || (glintResult.getFlag() & CLOUD_ICE) == CLOUD_ICE ||
+           (pixel.l1Flag & L1_INVALID_FLAG) == L1_INVALID_FLAG) {
+            glintResult.raiseFlag(INVALID);
             return glintResult;
         }
 
