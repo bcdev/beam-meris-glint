@@ -245,8 +245,8 @@ public class GlintCorrectionOperator extends Operator {
 
 
         nadirColumnIndex = findNadirColumnIndex();
-        
-        if(!merisProduct.containsPixel(nadirColumnIndex, 0)) {
+
+        if (!merisProduct.containsPixel(nadirColumnIndex, 0)) {
             // todo (mp - 20101014) need a solution for computing the flight direction even if the nadir is
             // outside of the scene bounds
             throw new OperatorException("Product does not contain the nadir line.");
@@ -333,11 +333,12 @@ public class GlintCorrectionOperator extends Operator {
             }
         }
 
-        if(nadirIndex == 0) { // we are on the left side
+        if (nadirIndex == 0) { // we are on the left side
             final double stepSize = abs(viewZenithRow[0] - viewZenithRow[1]);
             nadirIndex -= ceilInt(minValue / stepSize);
         } else if (nadirIndex == viewZenithRow.length - 1) { // we are on the right side
-            final double stepSize = abs(viewZenithRow[viewZenithRow.length - 1] - viewZenithRow[viewZenithRow.length - 2]);
+            final double stepSize = abs(
+                    viewZenithRow[viewZenithRow.length - 1] - viewZenithRow[viewZenithRow.length - 2]);
             nadirIndex += floorInt(minValue / stepSize);
         }
         return nadirIndex;
@@ -402,7 +403,6 @@ public class GlintCorrectionOperator extends Operator {
                                       GlintResult glintResult) {
         final ProductData agcFlagTile = targetSampleData.get(AGC_FLAG_BAND_NAME);
         agcFlagTile.setElemIntAt(pixelIndex, glintResult.getFlag());
-        // todo - copy source image in initialize
         final ProductData l1FlagTile = targetSampleData.get(MERIS_L1B_FLAGS_DS_NAME);
         l1FlagTile.setElemIntAt(pixelIndex, inputData.l1Flag);
         final ProductData angTile = targetSampleData.get(ANG_443_865);
