@@ -217,6 +217,8 @@ public class GlintCorrectionOperator extends Operator {
         final int rasterWidth = merisProduct.getSceneRasterWidth();
 
         Product outputProduct = new Product(merisProduct.getName() + "_AC", "MERIS_L2_AC", rasterWidth, rasterHeight);
+        outputProduct.setStartTime(merisProduct.getStartTime());
+        outputProduct.setEndTime(merisProduct.getEndTime());
         ProductUtils.copyMetadata(merisProduct, outputProduct);
         ProductUtils.copyTiePointGrids(merisProduct, outputProduct);
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
