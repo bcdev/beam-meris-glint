@@ -187,7 +187,8 @@ public class GlintCorrectionOperator extends Operator {
     private double[] latMit;
     private double[] lonMit;
     private int nadirColumnIndex;
-    private String neuralNetString;
+    private String merisNeuralNetString;
+    private String flintNeuralNetString;
 
     @Override
     public void initialize() throws OperatorException {
@@ -236,10 +237,10 @@ public class GlintCorrectionOperator extends Operator {
                                                                                           cloudIceExpression);
         validationBand = validationOp.getTargetProduct().getBandAt(0);
 
-        if (useFlint) {
-            neuralNetString = readNeuralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
+        if (useFlint && aatsrProduct != null) {
+            flintNeuralNetString = readNeuralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
         } else {
-            neuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+            merisNeuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         }
 
 
@@ -272,7 +273,11 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
-            GlintCorrection glintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(neuralNetString));
+            GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString));
+            GlintCorrection aatsrFlintCorrection = null;
+            if(useFlint && flintProduct != null) {
+                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString));
+            }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
                 checkForCancellation(pm);
@@ -293,10 +298,14 @@ public class GlintCorrectionOperator extends Operator {
                     inputData.viewaziMer = computeMerisFlightDirection(pixelX, alpha);
                     inputData.flintValue = getFlintValue(pixelX, pixelY);
 
-                    GlintResult glintResult = glintCorrection.perform(inputData, deriveRwFromPath);
-                    if (useFlint && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
+                    GlintResult glintResult;
+                    if (aatsrFlintCorrection != null && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
+                        glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath);
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
+                    } else {
+                        glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath);
                     }
+
                     fillTargetSampleData(targetSampleDataMap, pixelIndex, inputData, glintResult);
                 }
                 pm.worked(1);
