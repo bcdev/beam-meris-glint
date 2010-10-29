@@ -42,9 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.Math.*;
 import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
-import static org.esa.beam.util.math.MathUtils.*;
 
 /**
  * Main operator for the AGC Glint correction.
@@ -257,7 +255,7 @@ public class GlintCorrectionOperator extends Operator {
 
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString));
             GlintCorrection aatsrFlintCorrection = null;
-            if(useFlint && flintProduct != null) {
+            if (useFlint && flintProduct != null) {
                 aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString));
             }
 
