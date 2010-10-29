@@ -4,20 +4,20 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class GlintCorrectionOperatorTest {
+public class MerisFlightDirectionTest {
 
     @Test
     public void testFindNadirColumnInScene() {
         int expectedNadirIndex = 30;
         final double[] data = createViewZenithArray(expectedNadirIndex, 12.3);
-        assertEquals(expectedNadirIndex, GlintCorrectionOperator.findNadirColumnIndex(data));
+        assertEquals(expectedNadirIndex, MerisFlightDirection.findNadirColumnIndex(data));
     }
 
     @Test
     public void testFindNadirColumnIfNadirOutOfSceneLeftSide() {
         int expectedNadirIndex = -243;
         final double[] data = createViewZenithArray(expectedNadirIndex, 30.6);
-        assertEquals(expectedNadirIndex, GlintCorrectionOperator.findNadirColumnIndex(data));
+        assertEquals(expectedNadirIndex, MerisFlightDirection.findNadirColumnIndex(data));
     }
 
 
@@ -25,7 +25,7 @@ public class GlintCorrectionOperatorTest {
     public void testFindNadirColumnIfNadirOutOfSceneRightSide() {
         int expectedNadirIndex = 765;
         final double[] data = createViewZenithArray(expectedNadirIndex, 48.76);
-        assertEquals(expectedNadirIndex, GlintCorrectionOperator.findNadirColumnIndex(data));
+        assertEquals(expectedNadirIndex, MerisFlightDirection.findNadirColumnIndex(data));
     }
 
     private double[] createViewZenithArray(int expectedNadirIndex, double startValue) {

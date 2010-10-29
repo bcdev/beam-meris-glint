@@ -13,7 +13,6 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.ProductNodeGroup;
 import org.esa.beam.framework.datamodel.RasterDataNode;
-import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
@@ -182,13 +181,9 @@ public class GlintCorrectionOperator extends Operator {
     private Band validationBand;
 
     public static final double NO_FLINT_VALUE = -1.0;
-    private double[] sunZenMit;
-    private double[] sunAziMit;
-    private double[] latMit;
-    private double[] lonMit;
-    private int nadirColumnIndex;
     private String merisNeuralNetString;
     private String flintNeuralNetString;
+    private MerisFlightDirection merisFlightDirection;
 
     @Override
     public void initialize() throws OperatorException {
@@ -243,23 +238,10 @@ public class GlintCorrectionOperator extends Operator {
             merisNeuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         }
 
-
-        nadirColumnIndex = findNadirColumnIndex();
-
-        if (!merisProduct.containsPixel(nadirColumnIndex, 0)) {
-            // todo (mp - 20101014) need a solution for computing the flight direction even if the nadir is
-            // outside of the scene bounds
-            throw new OperatorException("Product does not contain the nadir line.");
-        }
-
-        sunZenMit = loadNadirGridColumnData(MERIS_SUN_ZENITH_DS_NAME, nadirColumnIndex);
-        sunAziMit = loadNadirGridColumnData(MERIS_SUN_AZIMUTH_DS_NAME, nadirColumnIndex);
-        latMit = loadNadirGridColumnData(MERIS_LAT_DS_NAME, nadirColumnIndex);
-        lonMit = loadNadirGridColumnData(MERIS_LON_DS_NAME, nadirColumnIndex);
-
-        for (int i = 0; i < latMit.length; i++) {
-            latMit[i] = Math.toRadians(latMit[i]);
-            lonMit[i] = Math.toRadians(lonMit[i]);
+        try {
+            merisFlightDirection = new MerisFlightDirection(merisProduct);
+        } catch (IllegalArgumentException e) {
+            throw new OperatorException("Not able to compute flight direction.", e);
         }
 
         setTargetProduct(outputProduct);
@@ -284,18 +266,18 @@ public class GlintCorrectionOperator extends Operator {
                 final int lineIndex = y * targetRectangle.width;
                 final int pixelY = targetRectangle.y + y;
 
-                final double alpha = computeFlightDirectionAlpha(pixelY, lonMit, latMit);
+                final double alpha = merisFlightDirection.computeFlightDirectionAlpha(pixelY);
 
                 for (int x = 0; x < targetRectangle.getWidth(); x++) {
                     final int pixelIndex = lineIndex + x;
                     final PixelData inputData = loadMerisPixelData(merisSampleDataMap, pixelIndex);
                     final int pixelX = targetRectangle.x + x;
-                    inputData.solzenMer = sunZenMit[pixelY];
-                    inputData.solaziMer = sunAziMit[pixelY];
+                    inputData.solzenMer = merisFlightDirection.getNadirSunZenith(pixelY);
+                    inputData.solaziMer = merisFlightDirection.getNadirSunAzimuth(pixelY);
                     // todo - different to breadboard line 159 in mer_wat_***01.c
                     inputData.viewzenMer = inputData.satzen / 1.1364;
 
-                    inputData.viewaziMer = computeMerisFlightDirection(pixelX, alpha);
+                    inputData.viewaziMer = merisFlightDirection.computeMerisFlightDirection(pixelX, alpha);
                     inputData.flintValue = getFlintValue(pixelX, pixelY);
 
                     GlintResult glintResult;
@@ -318,55 +300,6 @@ public class GlintCorrectionOperator extends Operator {
             pm.done();
         }
 
-    }
-
-    private int findNadirColumnIndex() {
-        final int rasterWidth = merisProduct.getSceneRasterWidth();
-        final TiePointGrid grid = merisProduct.getTiePointGrid(MERIS_VIEW_ZENITH_DS_NAME);
-        final double[] data = new double[rasterWidth];
-        final Rectangle centerColumn = new Rectangle(0, 0, data.length, 1);
-        grid.getGeophysicalImage().getData(centerColumn).getPixels(0, 0, data.length, 1, data);
-        return findNadirColumnIndex(data);
-    }
-
-    static int findNadirColumnIndex(double[] viewZenithRow) {
-        double minValue = viewZenithRow[0];
-        int nadirIndex = 0;
-        for (int i = 1; i < viewZenithRow.length; i++) {
-            if (viewZenithRow[i] < minValue) {
-                minValue = viewZenithRow[i];
-                nadirIndex = i;
-            } else {
-                break;
-            }
-        }
-
-        if (nadirIndex == 0) { // we are on the left side
-            final double stepSize = abs(viewZenithRow[0] - viewZenithRow[1]);
-            nadirIndex -= ceilInt(minValue / stepSize);
-        } else if (nadirIndex == viewZenithRow.length - 1) { // we are on the right side
-            final double stepSize = abs(
-                    viewZenithRow[viewZenithRow.length - 1] - viewZenithRow[viewZenithRow.length - 2]);
-            nadirIndex += floorInt(minValue / stepSize);
-        }
-        return nadirIndex;
-    }
-
-    private double computeMerisFlightDirection(int pixelX, double alpha) {
-        return alpha + (pixelX < nadirColumnIndex ? 90.0 : 270.0);
-    }
-
-    private double computeFlightDirectionAlpha(int pixelY, double[] longitudeColumn, double[] latitudeColumn) {
-        final double lon0 = longitudeColumn[0];
-        final double lat0 = latitudeColumn[0];
-        final double lat1 = latitudeColumn[pixelY];
-        final double lon1 = longitudeColumn[pixelY];
-
-        double lonDiff = lon0 - lon1;
-        double cosG = sin(lat0) * sin(lat1) + cos(lat0) * cos(lat1) * cos(lonDiff);
-        double g = acos(cosG);
-        double sinAlpha = cos(lat0) * sin(lon0 - lon1) / sin(g);
-        return toDegrees(asin(sinAlpha));
     }
 
     private double getFlintValue(int pixelX, int pixelY) {
@@ -461,15 +394,6 @@ public class GlintCorrectionOperator extends Operator {
         }
     }
 
-    private double[] loadNadirGridColumnData(String tpgName, int nadirColumnIndex) {
-        final int rasterHeight = merisProduct.getSceneRasterHeight();
-        final double[] data = new double[rasterHeight];
-        final Rectangle centerColumn = new Rectangle(nadirColumnIndex, 0, 1, data.length);
-        final TiePointGrid grid = merisProduct.getTiePointGrid(tpgName);
-        grid.getGeophysicalImage().getData(centerColumn).getPixels(nadirColumnIndex, 0, 1, data.length, data);
-        return data;
-    }
-
     private PixelData loadMerisPixelData(Map<String, ProductData> sourceTileMap, int index) {
         final PixelData pixelData = new PixelData();
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
@@ -560,8 +484,7 @@ public class GlintCorrectionOperator extends Operator {
                                              ProgressMonitor.NULL);
         map.put(ozoneTile.getRasterDataNode().getName(), ozoneTile.getRawSamples());
 
-        for (int i = 0; i < MERIS_L1B_SPECTRAL_BAND_NAMES.length; i++) {
-            String spectralBandName = MERIS_L1B_SPECTRAL_BAND_NAMES[i];
+        for (String spectralBandName : MERIS_L1B_SPECTRAL_BAND_NAMES) {
             final RasterDataNode dataNode = merisProduct.getRasterDataNode(spectralBandName);
             final Tile spectralTile = getSourceTile(dataNode, targetRectangle, ProgressMonitor.NULL);
             map.put(spectralTile.getRasterDataNode().getName(), spectralTile.getRawSamples());
