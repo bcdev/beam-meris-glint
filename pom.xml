@@ -52,9 +52,16 @@
             <url>scp://www.brockmann-consult.de/var/www/www.brockmann-consult.de/mvn/os</url>
             <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
-    </distributionManagement>   
+    </distributionManagement>
 
     <properties>
+        <!--
+           In version 3.0 of Maven the sourceEncoding property will be embedded in the
+           build tag. For now the convention is to that it as property.
+           TODO: Move the sourceEncoding property to the build tag if version 3.0 is released
+           -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <beam.version>4.9-SNAPSHOT</beam.version>
         <ceres.version>0.12-SNAPSHOT</ceres.version>
     </properties>
@@ -86,11 +93,11 @@
             <version>${ceres.version}</version>
         </dependency>
 
-        
-		<dependency>
+
+        <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-core</artifactId>
-			<version>${beam.version}</version>
+            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
@@ -104,9 +111,9 @@
         </dependency>
         <dependency>
             <groupId>org.esa.beam.glint</groupId>
-			<artifactId>flint-processor</artifactId>
-			<version>1.1.2</version>
-		</dependency>
+            <artifactId>flint-processor</artifactId>
+            <version>1.1.2</version>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
