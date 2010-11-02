@@ -6,7 +6,7 @@ import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.datamodel.TiePointGrid;
+import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
@@ -52,12 +52,13 @@ public class ToaReflectanceOp extends Operator {
     private Map<Band, Band> bandMap;
     private Band invalidBand;
 
-   public static ToaReflectanceOp create(Product sourceProduct) {
+    public static ToaReflectanceOp create(Product sourceProduct) {
 
-       final ToaReflectanceOp op = new ToaReflectanceOp();
-       op.sourceProduct = sourceProduct;
-       return op;
-   }
+        final ToaReflectanceOp op = new ToaReflectanceOp();
+        op.sourceProduct = sourceProduct;
+        return op;
+    }
+
     @Override
     public void initialize() throws OperatorException {
         validateSourceProduct(sourceProduct);
@@ -79,9 +80,9 @@ public class ToaReflectanceOp extends Operator {
         ProductUtils.copyFlagBands(sourceProduct, targetProduct);
         bandMap.put(targetProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME),
                     sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME));
-        
+
         BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID",
-                                                                                         sourceProduct);
+                                                                               sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
 
     }
@@ -130,7 +131,7 @@ public class ToaReflectanceOp extends Operator {
         try {
             pm.beginTask(taskName, targetTile.getHeight() * 5);
             final Band sourceBand = bandMap.get(targetBand);
-            final TiePointGrid solzenGrid = sourceProduct.getTiePointGrid(SOLZEN_GRID_NAME);
+            final RasterDataNode solzenGrid = sourceProduct.getRasterDataNode(SOLZEN_GRID_NAME);
             final Tile sourceTile = getSourceTile(sourceBand, targetTile.getRectangle(),
                                                   SubProgressMonitor.create(pm, targetTile.getHeight()));
             final Tile solzenTile = getSourceTile(solzenGrid, targetTile.getRectangle(),
@@ -181,9 +182,10 @@ public class ToaReflectanceOp extends Operator {
             String message = MessageFormat.format("Missing required band: {0}", missedBand);
             throw new OperatorException(message);
         }
-        List<String> sourceTpgNameList = Arrays.asList(product.getTiePointGridNames());
-        if (!sourceTpgNameList.contains(SOLZEN_GRID_NAME)) {
-            String message = MessageFormat.format("Missing required tie-point grid: {0}", SOLZEN_GRID_NAME);
+        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
+        if (!sourceNodeNameList.contains(SOLZEN_GRID_NAME)) {
+            String message = MessageFormat.format("Missing required raster: {0}", SOLZEN_GRID_NAME);
             throw new OperatorException(message);
         }
 

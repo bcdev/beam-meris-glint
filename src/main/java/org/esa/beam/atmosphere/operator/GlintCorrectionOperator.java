@@ -58,7 +58,7 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.2";
+    public static final String GLINT_CORRECTION_VERSION = "1.2-SNAPSHOT";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
@@ -633,7 +633,7 @@ public class GlintCorrectionOperator extends Operator {
         }
         final String missedTPG = validateMerisProductTpgs(merisProduct);
         if (!missedTPG.isEmpty()) {
-            String message = MessageFormat.format("Missing required tie-point grid in product {0}: {1}",
+            String message = MessageFormat.format("Missing required raster in product {0}: {1}",
                                                   merisProduct.getName(), missedTPG);
             throw new OperatorException(message);
         }
@@ -649,7 +649,7 @@ public class GlintCorrectionOperator extends Operator {
             }
             final String missedTPG = validateAatsrProductTpgs(aatsrProduct);
             if (!missedTPG.isEmpty()) {
-                String message = MessageFormat.format("Missing required tie-point grid in product {0}: {1}",
+                String message = MessageFormat.format("Missing required raster in product {0}: {1}",
                                                       aatsrProduct.getName(), missedTPG);
                 throw new OperatorException(message);
             }
@@ -693,9 +693,10 @@ public class GlintCorrectionOperator extends Operator {
 
 
     private static String validateMerisProductTpgs(Product product) {
-        List<String> sourceTpgNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_MERIS_TPG_NAMES) {
-            if (!sourceTpgNameList.contains(tpgName)) {
+            if (!sourceNodeNameList.contains(tpgName)) {
                 return tpgName;
             }
         }
@@ -704,9 +705,10 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private static String validateAatsrProductTpgs(Product product) {
-        List<String> sourceTpgNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_AATSR_TPG_NAMES) {
-            if (!sourceTpgNameList.contains(tpgName)) {
+            if (!sourceNodeNameList.contains(tpgName)) {
                 return tpgName;
             }
         }

@@ -1,7 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.datamodel.TiePointGrid;
+import org.esa.beam.framework.datamodel.RasterDataNode;
 
 import java.awt.Rectangle;
 
@@ -39,7 +39,7 @@ public class MerisFlightDirection {
         }
         lonNadir0 = lonNadir[0];
         latNadir0 = latNadir[0];
-        
+
     }
 
     public double getNadirSunZenith(int line) {
@@ -69,14 +69,14 @@ public class MerisFlightDirection {
         final int rasterHeight = merisProduct.getSceneRasterHeight();
         final double[] data = new double[rasterHeight];
         final Rectangle centerColumn = new Rectangle(nadirColumnIndex, 0, 1, data.length);
-        final TiePointGrid grid = merisProduct.getTiePointGrid(tpgName);
+        final RasterDataNode grid = merisProduct.getRasterDataNode(tpgName);
         grid.getGeophysicalImage().getData(centerColumn).getPixels(nadirColumnIndex, 0, 1, data.length, data);
         return data;
     }
 
     private int findNadirColumnIndex(Product merisProduct) {
         final int rasterWidth = merisProduct.getSceneRasterWidth();
-        final TiePointGrid grid = merisProduct.getTiePointGrid(MERIS_VIEW_ZENITH_DS_NAME);
+        final RasterDataNode grid = merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME);
         final double[] data = new double[rasterWidth];
         final Rectangle centerColumn = new Rectangle(0, 0, data.length, 1);
         grid.getGeophysicalImage().getData(centerColumn).getPixels(0, 0, data.length, 1, data);
@@ -105,7 +105,6 @@ public class MerisFlightDirection {
         }
         return nadirIndex;
     }
-
 
 
 }
