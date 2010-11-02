@@ -11,10 +11,12 @@ import static java.lang.Math.*;
  * @version $Revision: 2185 $ $Date: 2009-10-28 14:18:32 +0100 (Mi, 28 Okt 2009) $
  */
 class Tosa {
-    private static final double[] OZON_ABSORBTION = {
+
+    private static final double[] OZON_ABSORPTION = {
             -8.2e-004, -2.82e-003, -2.076e-002, -3.96e-002, -1.022e-001,
             -1.059e-001, -5.313e-002, -3.552e-002, -1.895e-002, -8.38e-003,
-            -7.2e-004, -0.0};
+            -7.2e-004, -0.0
+    };
 
 
     private double[] trans_oz_toa_tosa_down_surf;
@@ -79,7 +81,7 @@ class Tosa {
 
         double cos_teta_view_meris = cos(teta_view_meris_rad);
         double cos_teta_sun_meris = cos(teta_sun_meris_rad);
-        
+
 
         double[] rlTosa = new double[12];
         double[] tau_rayl_standard = new double[12];
@@ -104,7 +106,8 @@ class Tosa {
 
         /* calculate optical thickness of rayleigh for correction layer, lam in micrometer */
         for (int i = 0; i < tau_rayl_standard.length; i++) {
-            tau_rayl_standard[i] = 0.008735 * Math.pow(GlintCorrection.MERIS_WAVELENGTHS[i] / 1000.0, -4.08);/* lam in µm */
+            tau_rayl_standard[i] = 0.008735 * Math.pow(GlintCorrection.MERIS_WAVELENGTHS[i] / 1000.0,
+                                                       -4.08);/* lam in µm */
             tau_rayl_toa_tosa[i] = tau_rayl_standard[i] * rayl_rest_mass;
         }
 
@@ -118,28 +121,28 @@ class Tosa {
         /* ozon and rayleigh correction layer transmission */
         double ozon_rest_mass = (pixel.ozone / 1000.0 - 0.35); /* conc ozone from MERIS is in DU */
         for (int i = 0; i < trans_oz_toa_tosa_down_surf.length; i++) {
-            final double ozonAbsorbtion = OZON_ABSORBTION[i];
+            final double ozonAbsorption = OZON_ABSORPTION[i];
             final double scaledTauToaTosa = -tau_rayl_toa_tosa[i] * 0.5; /* 0.5 because diffuse trans */
 
-            trans_oz_toa_tosa_down_surf[i] = exp(ozonAbsorbtion * ozon_rest_mass / cos_teta_sun_surf);
-            trans_oz_toa_tosa_up_surf[i] = exp(ozonAbsorbtion * ozon_rest_mass / cos_teta_view_surf);
+            trans_oz_toa_tosa_down_surf[i] = exp(ozonAbsorption * ozon_rest_mass / cos_teta_sun_surf);
+            trans_oz_toa_tosa_up_surf[i] = exp(ozonAbsorption * ozon_rest_mass / cos_teta_view_surf);
 
-            trans_ozon_down_surf[i] = exp(ozonAbsorbtion * pixel.ozone / 1000.0 / cos_teta_sun_surf);
-            trans_ozon_up_surf[i] = exp(ozonAbsorbtion * pixel.ozone / 1000.0 / cos_teta_view_surf);
+            trans_ozon_down_surf[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_sun_surf);
+            trans_ozon_up_surf[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_view_surf);
             trans_rayl_down_surf[i] = exp(scaledTauToaTosa / cos_teta_sun_surf);
             trans_rayl_up_surf[i] = exp(scaledTauToaTosa / cos_teta_view_surf);
 
-            double LRpath_surf = sun_toa[i] * trans_ozon_down_surf[i] *trans_ozon_up_surf[i] *
-                                 cos_teta_sun_surf/cos_teta_sun_meris * tau_rayl_standard[i] * phase_rayl_surf /
-                                 (4.0*PI*cos_teta_view_surf);
+            double LRpath_surf = sun_toa[i] * trans_ozon_down_surf[i] * trans_ozon_up_surf[i] *
+                                 cos_teta_sun_surf / cos_teta_sun_meris * tau_rayl_standard[i] * phase_rayl_surf /
+                                 (4.0 * PI * cos_teta_view_surf);
 
-            trans_ozon_down_meris[i] = exp(ozonAbsorbtion * pixel.ozone / 1000.0 / cos_teta_sun_meris);
-            trans_ozon_up_meris[i] = exp(ozonAbsorbtion * pixel.ozone / 1000.0 / cos_teta_view_meris);
+            trans_ozon_down_meris[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_sun_meris);
+            trans_ozon_up_meris[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_view_meris);
             trans_rayl_down_meris[i] = exp(scaledTauToaTosa / cos_teta_sun_meris);
             trans_rayl_up_meris[i] = exp(scaledTauToaTosa / cos_teta_view_meris);
 
             double LRpath_meris = sun_toa[i] * trans_ozon_down_surf[i] * tau_rayl_standard[i] * phase_rayl_meris /
-                                 (4.0*PI*cos_teta_view_meris);
+                                  (4.0 * PI * cos_teta_view_meris);
 
             LRpathDiff[i] = LRpath_surf - LRpath_meris;
 
@@ -150,7 +153,7 @@ class Tosa {
 
         for (int i = 0; i < lrcPath.length; i++) {
             lrcPath[i] = ed_toa[i] * tau_rayl_toa_tosa[i] * trans_ozon_down_surf[i]
-                             * phase_rayl_surf / (4 * Math.PI * cos_teta_view_surf * cos_teta_sun_surf);
+                         * phase_rayl_surf / (4 * Math.PI * cos_teta_view_surf * cos_teta_sun_surf);
         }
 
         /* Calculate Ed_tosa */
