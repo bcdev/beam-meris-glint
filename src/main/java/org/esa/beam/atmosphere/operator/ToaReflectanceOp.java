@@ -18,6 +18,7 @@ import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -182,7 +183,8 @@ public class ToaReflectanceOp extends Operator {
             String message = MessageFormat.format("Missing required band: {0}", missedBand);
             throw new OperatorException(message);
         }
-        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = new ArrayList<String>();
+        sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         if (!sourceNodeNameList.contains(SOLZEN_GRID_NAME)) {
             String message = MessageFormat.format("Missing required raster: {0}", SOLZEN_GRID_NAME);

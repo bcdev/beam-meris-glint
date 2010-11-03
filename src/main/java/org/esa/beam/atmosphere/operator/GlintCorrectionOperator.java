@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -242,8 +243,21 @@ public class GlintCorrectionOperator extends Operator {
             throw new OperatorException("Not able to compute flight direction.", e);
         }
 
+        // copy all source bands yet ignored
+        for (final Band sourceBand : merisProduct.getBands()) {
+            if (sourceBand.getSpectralBandIndex() == -1 && !outputProduct.containsBand(sourceBand.getName())) {
+                copySourceBand(sourceBand, outputProduct);
+            }
+        }
+
         setTargetProduct(outputProduct);
     }
+
+    private void copySourceBand(Band sourceBand, Product targetProduct) {
+        final Band targetBand = ProductUtils.copyBand(sourceBand.getName(), merisProduct, targetProduct);
+        targetBand.setSourceImage(sourceBand.getSourceImage());
+    }
+
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws
@@ -693,7 +707,8 @@ public class GlintCorrectionOperator extends Operator {
 
 
     private static String validateMerisProductTpgs(Product product) {
-        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = new ArrayList<String>();
+        sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_MERIS_TPG_NAMES) {
             if (!sourceNodeNameList.contains(tpgName)) {
@@ -705,7 +720,8 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private static String validateAatsrProductTpgs(Product product) {
-        List<String> sourceNodeNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = new ArrayList<String>();
+        sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_AATSR_TPG_NAMES) {
             if (!sourceNodeNameList.contains(tpgName)) {

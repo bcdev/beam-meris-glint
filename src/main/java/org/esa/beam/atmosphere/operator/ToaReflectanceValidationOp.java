@@ -4,20 +4,21 @@ import com.bc.ceres.core.ProgressMonitor;
 import com.bc.ceres.core.SubProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
+import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.gpf.operators.standard.BandMathsOp;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,6 +37,7 @@ import java.util.List;
                   copyright = "(c) 2007 by Brockmann Consult",
                   description = "Validation of TOA reflectances.")
 public class ToaReflectanceValidationOp extends Operator {
+
     public static final int LAND_FLAG_MASK = 0x01;
     public static final int CLOUD_ICE_FLAG_MASK = 0x02;
     public static final int RLTOA_OOR_FLAG_MASK = 0x04;
@@ -45,9 +47,11 @@ public class ToaReflectanceValidationOp extends Operator {
     @TargetProduct
     private Product targetProduct;
 
-    @Parameter(defaultValue = "toa_reflec_10 > toa_reflec_6 AND toa_reflec_13 > 0.0475", label = "Land detection expression", notEmpty = true, notNull = true)
+    @Parameter(defaultValue = "toa_reflec_10 > toa_reflec_6 AND toa_reflec_13 > 0.0475",
+               label = "Land detection expression", notEmpty = true, notNull = true)
     private String landExpression = "l1_flags.INVALID";
-    @Parameter(defaultValue = "toa_reflec_14 > 0.2", label = "Cloud/Ice detection expression", notEmpty = true, notNull = true)
+    @Parameter(defaultValue = "toa_reflec_14 > 0.2", label = "Cloud/Ice detection expression", notEmpty = true,
+               notNull = true)
     private String cloudIceExpression = "l1_flags.INVALID";
 
     @Parameter(defaultValue = "toa_reflec_13 >  0.035", label = "Out of range detection expression")
@@ -58,7 +62,8 @@ public class ToaReflectanceValidationOp extends Operator {
     private Band rlToaOorBand;
 
 
-    public static ToaReflectanceValidationOp create(Product sourceProduct, String landExpression, String cloudIceExpression) {
+    public static ToaReflectanceValidationOp create(Product sourceProduct, String landExpression,
+                                                    String cloudIceExpression) {
         final ToaReflectanceValidationOp validationOp = new ToaReflectanceValidationOp();
         validationOp.sourceProduct = sourceProduct;
         validationOp.landExpression = landExpression;
@@ -104,11 +109,11 @@ public class ToaReflectanceValidationOp extends Operator {
             ProductData targetSamples = targetTile.getRawSamples();
 
             final Tile landWaterTile = getSourceTile(landWaterBand, targetTile.getRectangle(),
-                                                   SubProgressMonitor.create(pm, targetTile.getHeight()));
+                                                     SubProgressMonitor.create(pm, targetTile.getHeight()));
             final Tile cloudIceTile = getSourceTile(cloudIceBand, targetTile.getRectangle(),
-                                                   SubProgressMonitor.create(pm, targetTile.getHeight()));
+                                                    SubProgressMonitor.create(pm, targetTile.getHeight()));
             final Tile rlToaOorTile = getSourceTile(rlToaOorBand, targetTile.getRectangle(),
-                                                   SubProgressMonitor.create(pm, targetTile.getHeight()));
+                                                    SubProgressMonitor.create(pm, targetTile.getHeight()));
             final ProductData landWaterSamples = landWaterTile.getRawSamples();
             final ProductData cloudIceSamples = cloudIceTile.getRawSamples();
             final ProductData rlToaOorSamples = rlToaOorTile.getRawSamples();
@@ -121,13 +126,13 @@ public class ToaReflectanceValidationOp extends Operator {
                 for (int x = 0; x < targetTile.getWidth(); x++) {
                     byte value = 0;
                     final int index = lineIndex + x;
-                    if(landWaterSamples.getElemBooleanAt(index)) {
+                    if (landWaterSamples.getElemBooleanAt(index)) {
                         value |= LAND_FLAG_MASK;
                     }
-                    if(cloudIceSamples.getElemBooleanAt(index)) {
+                    if (cloudIceSamples.getElemBooleanAt(index)) {
                         value |= CLOUD_ICE_FLAG_MASK;
                     }
-                    if(rlToaOorSamples.getElemBooleanAt(index)) {
+                    if (rlToaOorSamples.getElemBooleanAt(index)) {
                         value |= RLTOA_OOR_FLAG_MASK;
                     }
                     targetSamples.setElemIntAt(index, value);
@@ -171,9 +176,11 @@ public class ToaReflectanceValidationOp extends Operator {
     }
 
     private static String validateProductTpgs(Product product) {
-        List<String> sourceTpgNameList = Arrays.asList(product.getTiePointGridNames());
+        List<String> sourceNodeNameList = new ArrayList<String>();
+        sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
+        sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : EnvisatConstants.MERIS_TIE_POINT_GRID_NAMES) {
-            if (!sourceTpgNameList.contains(tpgName)) {
+            if (!sourceNodeNameList.contains(tpgName)) {
                 return tpgName;
             }
         }
