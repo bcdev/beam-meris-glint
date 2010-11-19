@@ -31,6 +31,8 @@
     <changelog>
         <![CDATA[
         <p>Changes in version 1.2<br/>
+        - new neural net for MERIS with better frequency distribution of IOPs, extended domain of concentrations
+          and correction for calculation of transmission
         - Made Glint Correction thread safe
         - introduce flag agc_flags.INVALID combining agc_flags.LAND, agc_flags.CLOUD_ICE and l1_flags.INVALID
         - better default expressions for land and cloud/ice detection
