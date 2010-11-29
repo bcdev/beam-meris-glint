@@ -41,6 +41,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -553,20 +554,34 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private void addTargetBands(Product product) {
+        final List<String> groupList = new ArrayList<String>();
         if (outputTosa) {
             addSpectralTargetBands(product, TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
+            groupList.add("tosa_reflec");
         }
         if (outputReflec) {
             addSpectralTargetBands(product, REFLEC_BAND_NAMES, "Water leaving radiance reflectance at {0} nm", "sr^-1");
+            groupList.add("reflec");
         }
         if (outputPath) {
             addSpectralTargetBands(product, PATH_BAND_NAMES, "Water leaving radiance reflectance path at {0} nm",
                                    "dxd");
+            groupList.add("path");
         }
         if (outputTransmittance) {
             addSpectralTargetBands(product, TRANS_BAND_NAMES,
                                    "Downwelling irrediance transmittance (Ed_Boa/Ed_Tosa) at {0} nm", "dl");
+            groupList.add("trans");
         }
+        final StringBuilder sb = new StringBuilder();
+        final Iterator<String> iterator = groupList.iterator();
+        while (iterator.hasNext()) {
+            sb.append(iterator.next());
+            if (iterator.hasNext()) {
+                sb.append(":");
+            }
+        }
+        product.setAutoGrouping(sb.toString());
         addNonSpectralTargetBand(product, TAU_550, "Spectral aerosol optical depth at 550", "dl");
         addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
         addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
