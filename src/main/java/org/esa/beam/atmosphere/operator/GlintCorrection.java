@@ -1,6 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import org.esa.beam.PixelData;
+import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
 
 import java.util.Arrays;
@@ -9,11 +10,13 @@ import java.util.Arrays;
  * Class providing the AGC Glint correction.
  */
 public class GlintCorrection {
+
     public static final double[] MERIS_WAVELENGTHS = {
             412.3, 442.3, 489.7,
             509.6, 559.5, 619.4,
             664.3, 680.6, 708.1,
-            753.1, 778.2, 864.6};
+            753.1, 778.2, 864.6
+    };
 
     public static final int LAND = 0x01;
     public static final int CLOUD_ICE = 0x02;
@@ -30,21 +33,29 @@ public class GlintCorrection {
 
     private static final double MAX_TAU_FACTOR = 0.84;
     private static final double[] H2O_COR_POLY = new double[]{
-            0.3832989, 1.6527957, -1.5635101, 0.5311913}; // polynom coefficients for band708 correction
+            0.3832989, 1.6527957, -1.5635101, 0.5311913
+    }; // polynom coefficients for band708 correction
 
 
-    private NNffbpAlphaTabFast atmosphereNet;
+    private final NNffbpAlphaTabFast atmosphereNet;
+    private final SmileCorrectionAuxdata smileAuxdata;
 
 
-    public GlintCorrection(NNffbpAlphaTabFast atmosphereNet) {
+    /**
+     * @param atmosphereNet the neural net for atmospheric correction
+     * @param smileAuxdata  can be {@code null} if SMILE correction shall not be performed
+     */
+    public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata) {
         this.atmosphereNet = atmosphereNet;
+        this.smileAuxdata = smileAuxdata;
     }
 
     /**
      * This method performa the Glint correction.
      *
-     * @param pixel - the pixel input data
+     * @param pixel            - the pixel input data
      * @param deriveRwFromPath -
+     *
      * @return GlintResult
      */
     public GlintResult perform(PixelData pixel, boolean deriveRwFromPath) {
@@ -57,7 +68,6 @@ public class GlintCorrection {
         final double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
         final double cosTetaSunSurfRad = Math.cos(tetaSunSurfRad);
 
-        
 
         final GlintResult glintResult = new GlintResult();
 
@@ -66,20 +76,20 @@ public class GlintCorrection {
         }
 
         if (isCloudIce(pixel)) {
-           glintResult.raiseFlag(CLOUD_ICE);
+            glintResult.raiseFlag(CLOUD_ICE);
         }
 
         if (isRlToaOor(pixel)) {
             glintResult.raiseFlag(TOA_OOR);
         }
 
-        if((glintResult.getFlag() & LAND) == LAND || (glintResult.getFlag() & CLOUD_ICE) == CLOUD_ICE ||
-           (pixel.l1Flag & L1_INVALID_FLAG) == L1_INVALID_FLAG) {
+        if ((glintResult.getFlag() & LAND) == LAND || (glintResult.getFlag() & CLOUD_ICE) == CLOUD_ICE ||
+            (pixel.l1Flag & L1_INVALID_FLAG) == L1_INVALID_FLAG) {
             glintResult.raiseFlag(INVALID);
             return glintResult;
         }
 
-        Tosa tosa = new Tosa();
+        Tosa tosa = new Tosa(smileAuxdata);
         tosa.init();
         final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad, aziDiffSurfRad);
         glintResult.setTosaReflec(rlTosa.clone());
@@ -95,7 +105,6 @@ public class GlintCorrection {
         if (!isAncillaryDataValid(pixel)) {
             glintResult.raiseFlag(ANCIL);
         }
-
 
 
         // water vapour correction for band 9 (708 nm)
@@ -116,8 +125,8 @@ public class GlintCorrection {
         }
         // last input is log_rlglint_13 in synergyMode
         if (isFlintValueValid(pixel.flintValue)) {
-            atmoInnet[atmoInnet.length-1] = pixel.flintValue;
-        } 
+            atmoInnet[atmoInnet.length - 1] = pixel.flintValue;
+        }
 
         double[] atmoOutnet = atmosphereNet.calc(atmoInnet);
 
@@ -160,7 +169,7 @@ public class GlintCorrection {
             glintResult.setBtsm(Math.exp(atmoOutnet[41]));
             glintResult.setAtot(Math.exp(atmoOutnet[42]));
 
-            if(atmoOutnet[40] > atmosphereNet.getOutmax()[40] * 0.97) {
+            if (atmoOutnet[40] > atmosphereNet.getOutmax()[40] * 0.97) {
                 glintResult.raiseFlag(SUNGLINT);
             }
         } else {
@@ -178,6 +187,7 @@ public class GlintCorrection {
      * (i.e., not equal to 0.0 or NO_FLINT_VALUE)
      *
      * @param flintValue - the value
+     *
      * @return boolean
      */
     public static boolean isFlintValueValid(double flintValue) {
@@ -201,6 +211,7 @@ public class GlintCorrection {
      **	test TOSA radiances as input to neural network for out of training range
      **  with band_nu 17/3/05 R.D.
     --------------------------------------------------------------------------*/
+
     private static boolean isTosaReflectanceValid(double[] tosaRefl, NNffbpAlphaTabFast atmosphereNet) {
         for (int i = 0; i < tosaRefl.length; i++) {
             double currentRlTosa = Math.log(tosaRefl[i]);
@@ -216,7 +227,6 @@ public class GlintCorrection {
         final boolean pressureValid = pixel.pressure >= 500 && pixel.pressure <= 1100;
         return ozoneValid && pressureValid;
     }
-
 
 
     private static double getAzimuthDifference(PixelData pixel) {

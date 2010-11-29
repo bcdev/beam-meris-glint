@@ -1,6 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import org.esa.beam.PixelData;
+import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 
 import static java.lang.Math.*;
 
@@ -34,6 +35,16 @@ class Tosa {
     private double[] ed_toa;
     private double[] edTosa;
     private double[] lTosa;
+    private SmileCorrectionAuxdata smileAuxdata;
+
+    /**
+     * Creates instance of this class
+     *
+     * @param smileAuxdata can be {@code null} if SMILE correction shall not be performed
+     */
+    Tosa(SmileCorrectionAuxdata smileAuxdata) {
+        this.smileAuxdata = smileAuxdata;
+    }
 
     public void init() {
         int length = 12;
@@ -85,8 +96,13 @@ class Tosa {
 
         double[] rlTosa = new double[12];
         double[] tau_rayl_standard = new double[12];
+        double[] sun_toa;
+        if (smileAuxdata != null) {
+            sun_toa = retrieveToaFrom(doSmileCorrection(pixel.detectorIndex, pixel.solar_flux, smileAuxdata));
+        } else {
+            sun_toa = retrieveToaFrom(pixel.solar_flux);
+        }
 
-        double[] sun_toa = retrieveToaFrom(pixel.solar_flux);
         double[] lToa = retrieveToaFrom(pixel.toa_radiance);
 
         /* compute Ed_toa from sun_toa using  cos_teta_sun */
@@ -171,6 +187,18 @@ class Tosa {
         }
 
         return rlTosa;
+    }
+
+    private static double[] doSmileCorrection(int detectorIndex, double[] solarFlux,
+                                              SmileCorrectionAuxdata smileAuxData) {
+        /* correct solar flux for this pixel */
+        double[] solarFluxSmile = new double[solarFlux.length];
+        double[] detectorSunSpectralFlux = smileAuxData.getDetectorSunSpectralFluxes()[detectorIndex];
+        double[] theoreticalSunSpectralFluxes = smileAuxData.getTheoreticalSunSpectralFluxes();
+        for (int i = 0; i < solarFlux.length; i++) {
+            solarFluxSmile[i] = solarFlux[i] * (detectorSunSpectralFlux[i] / theoreticalSunSpectralFluxes[i]);
+        }
+        return solarFluxSmile;
     }
 
     private static double[] retrieveToaFrom(double[] values) {

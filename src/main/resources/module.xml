@@ -52,6 +52,9 @@
         <optional>true</optional>
     </dependency>
     <dependency>
+        <module>beam-meris-radiometry</module>
+    </dependency>
+    <dependency>
         <module>flint-processor</module>
     </dependency>
 

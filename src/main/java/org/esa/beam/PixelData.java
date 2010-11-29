@@ -21,6 +21,7 @@ public class PixelData {
     public double ozone;        /* Total ozone concentration in DU		*/
     public int l1Flag;          /* Flags of the L1b product     */
     public int validation;
+    public int detectorIndex;
 
     // todo - find better name
     public double flintValue = GlintCorrectionOperator.NO_FLINT_VALUE;   /* value of the FLINT processor */

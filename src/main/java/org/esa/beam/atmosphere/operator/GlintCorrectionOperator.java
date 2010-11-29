@@ -23,6 +23,7 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.glint.operators.FlintOp;
+import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
 import org.esa.beam.util.ProductUtils;
 
@@ -128,6 +129,11 @@ public class GlintCorrectionOperator extends Operator {
     @TargetProduct(description = "The atmospheric corrected output product.")
     private Product targetProduct;
 
+    @Parameter(defaultValue = "false",
+               label = "Perform SMILE correction",
+               description = "Whether to perform SMILE correction.")
+    private boolean doSmileCorrection;
+
     @Parameter(defaultValue = "true", label = "Output TOSA reflectance",
                description = "Toggles the output of TOSA reflectance.")
     private boolean outputTosa;
@@ -183,6 +189,7 @@ public class GlintCorrectionOperator extends Operator {
     private String merisNeuralNetString;
     private String flintNeuralNetString;
     private MerisFlightDirection merisFlightDirection;
+    private SmileCorrectionAuxdata smileAuxData;
 
     @Override
     public void initialize() throws OperatorException {
@@ -242,6 +249,13 @@ public class GlintCorrectionOperator extends Operator {
         } catch (IllegalArgumentException e) {
             throw new OperatorException("Not able to compute flight direction.", e);
         }
+        if (doSmileCorrection) {
+            try {
+                smileAuxData = SmileCorrectionAuxdata.loadAuxdata(merisProduct.getProductType());
+            } catch (IOException e) {
+                throw new OperatorException("Not able to load auxiliary data for SMILE correction.", e);
+            }
+        }
 
         // copy all source bands yet ignored
         for (final Band sourceBand : merisProduct.getBands()) {
@@ -267,10 +281,11 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
-            GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString));
+            GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
+                                                                       smileAuxData);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
-                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString));
+                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData);
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
@@ -410,6 +425,7 @@ public class GlintCorrectionOperator extends Operator {
         final PixelData pixelData = new PixelData();
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
         pixelData.l1Flag = sourceTileMap.get(MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
+        pixelData.detectorIndex = sourceTileMap.get(MERIS_DETECTOR_INDEX_DS_NAME).getElemIntAt(index);
 
         pixelData.solzen = getScaledValue(sourceTileMap,
                                           merisProduct.getRasterDataNode(MERIS_SUN_ZENITH_DS_NAME),
@@ -482,6 +498,11 @@ public class GlintCorrectionOperator extends Operator {
                 merisProduct.getRasterDataNode(MERIS_VIEW_AZIMUTH_DS_NAME), targetRectangle,
                 ProgressMonitor.NULL);
         map.put(sataziTile.getRasterDataNode().getName(), sataziTile.getRawSamples());
+
+        final Tile detectorTile = getSourceTile(
+                merisProduct.getRasterDataNode(MERIS_DETECTOR_INDEX_DS_NAME), targetRectangle,
+                ProgressMonitor.NULL);
+        map.put(detectorTile.getRasterDataNode().getName(), detectorTile.getRawSamples());
 
         final Tile altitudeTile = getSourceTile(
                 merisProduct.getRasterDataNode(MERIS_DEM_ALTITUDE_DS_NAME), targetRectangle,
