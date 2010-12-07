@@ -3,9 +3,11 @@ package org.esa.beam.nn;
 
 import org.esa.beam.nn.util.FormattedStringReader;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.util.StringTokenizer;
 
 /**
  * This class is for using a Neural Net (NN) of type ffbp in a Java program. The
@@ -18,6 +20,7 @@ import java.util.StringTokenizer;
  *         04.11.2003
  */
 public class NNffbpAlphaTabFast {
+
     /**
      * Specifies the cutting of the activation function. For values below
      * alphaStart alphaTab[0] is used; for values greater (-alphaStart)
@@ -95,16 +98,28 @@ public class NNffbpAlphaTabFast {
     private NNCalc NNresjacob;
 
     /**
-     * Creates a neural net by read it from the string containing the definition.
+     * Creates a neural net by reading the definition from the string.
      *
-     * @param neuralNet the neural net as a string
+     * @param neuralNet the neural net definition as a string
+     *
      * @throws java.io.IOException if the neural net could not be read
      */
-    public NNffbpAlphaTabFast(String neuralNet) throws IOException  {
-        readNeuralNet(neuralNet);
+    public NNffbpAlphaTabFast(String neuralNet) throws IOException {
+        readNeuralNetFromString(neuralNet);
         makeAlphaTab();
         NNresjacob = new NNCalc();
         declareArrays();
+    }
+
+    /**
+     * Creates a neural net by reading the definition from the input stream.
+     *
+     * @param neuralNetStream the neural net definition as a input stream
+     *
+     * @throws java.io.IOException if the neural net could not be read
+     */
+    public NNffbpAlphaTabFast(InputStream neuralNetStream) throws IOException {
+        this(readNeuralNet(neuralNetStream));
     }
 
     public double[] getInmin() {
@@ -146,8 +161,25 @@ public class NNffbpAlphaTabFast {
         this.recDeltaAlpha = 1.0 / delta;
     }
 
+    private static String readNeuralNet(InputStream neuralNetStream) throws IOException {
+        String neuralNet;
+        BufferedReader reader = new BufferedReader(new InputStreamReader(neuralNetStream));
+        try {
+            String line = reader.readLine();
+            final StringBuilder sb = new StringBuilder();
+            while (line != null) {
+                // have to append line terminator, cause it's not included in line
+                sb.append(line).append('\n');
+                line = reader.readLine();
+            }
+            neuralNet = sb.toString();
+        } finally {
+            reader.close();
+        }
+        return neuralNet;
+    }
 
-    private void readNeuralNet(String net) throws IOException {
+    private void readNeuralNetFromString(String net) throws IOException {
         StringReader in = null;
         try {
             in = new StringReader(net);
@@ -226,6 +258,7 @@ public class NNffbpAlphaTabFast {
      *
      * @param x The signal incoming to the neuron for which the response is
      *          calculated.
+     *
      * @return The output signal.
      */
     private double activation(double x) {
@@ -246,6 +279,7 @@ public class NNffbpAlphaTabFast {
      *
      * @param x The first vector.
      * @param y The second vector.
+     *
      * @return The scalar product of these two vector.
      */
     private static double scp(double[] x, double[] y) {
@@ -264,6 +298,7 @@ public class NNffbpAlphaTabFast {
      *
      * @param nnInp The vector contains the {@link #nn_in}input parameters (must
      *              be in right order).
+     *
      * @return The output and corresponding Jacobi matrix of the NN.
      */
     public NNCalc calcJacobi(double[] nnInp) {
@@ -286,12 +321,12 @@ public class NNffbpAlphaTabFast {
                 help_pl[i] = act_pl_1[i] * (1.0 - act_pl_1[i]);
             }
 
-            double sum;
             final double[][] dActDX_pl = dActDX[pl];
+            final double[][] dActDX_pl1 = dActDX[pl + 1];
 
             for (int i = 0; i < size[pl + 1]; i++) {
                 for (int j = 0; j < nn_in; j++) {
-                    sum = 0.0;
+                    double sum = 0.0;
                     final double help_pl_i = help_pl[i];
                     final double[] wgt_pl_i = wgt_pl[i];
 
@@ -299,7 +334,7 @@ public class NNffbpAlphaTabFast {
                         sum += help_pl_i * wgt_pl_i[k] * dActDX_pl[k][j];
                     }
 
-                    dActDX[pl + 1][i][j] = sum;
+                    dActDX_pl1[i][j] = sum;
                 }
             }
         }
@@ -308,10 +343,12 @@ public class NNffbpAlphaTabFast {
         final double[] act_nplanes_1 = act[nplanes - 1];
         final double[][] dActDX_nplanes_1 = dActDX[nplanes - 1];
 
+        final double[][] jacobiMatrix = res.getJacobiMatrix();
+        final double[] nnOutput = res.getNnOutput();
         for (int i = 0; i < nn_out; i++) {
             final double diff = outmax[i] - outmin[i];
-            res.getNnOutput()[i] = act_nplanes_1[i] * diff + outmin[i];
-            final double[] res_jacobiMatrix_i = res.getJacobiMatrix()[i];
+            nnOutput[i] = act_nplanes_1[i] * diff + outmin[i];
+            final double[] res_jacobiMatrix_i = jacobiMatrix[i];
             final double[] dActDX_nplanes_1_i = dActDX_nplanes_1[i];
             for (int k = 0; k < nn_in; k++) {
                 res_jacobiMatrix_i[k] = dActDX_nplanes_1_i[k] * diff;
@@ -346,6 +383,7 @@ public class NNffbpAlphaTabFast {
      *
      * @param nninp The vector contains the {@link #nn_in}input parameters (must
      *              be in right order).
+     *
      * @return The {@link #nn_out}-long output vector.
      */
     public double[] calc(double[] nninp) {
@@ -355,17 +393,21 @@ public class NNffbpAlphaTabFast {
             act[0][i] = (nninp[i] - inmin[i]) / (inmax[i] - inmin[i]);
         }
         for (int pl = 0; pl < nplanes - 1; pl++) {
-            for (int i = 0; i < size[pl + 1]; i++) {
-                act[pl + 1][i] = activation(bias[pl][i] + scp(wgt[pl][i], act[pl]));
+            final double[] bias_pl = bias[pl];
+            final double[][] wgt_pl = wgt[pl];
+            final double[] act_pl = act[pl];
+            final double[] act_pl1 = act[pl + 1];
+            final int size_pl1 = size[pl + 1];
+            for (int i = 0; i < size_pl1; i++) {
+                act_pl1[i] = activation(bias_pl[i] + scp(wgt_pl[i], act_pl));
             }
         }
+        final double[] act_nnplanes1 = act[nplanes - 1];
         for (int i = 0; i < nn_out; i++) {
-            res[i] = act[nplanes - 1][i] * (outmax[i] - outmin[i]) + outmin[i];
+            res[i] = act_nnplanes1[i] * (outmax[i] - outmin[i]) + outmin[i];
         }
         return res;
     }
 
 
 }
-
-
