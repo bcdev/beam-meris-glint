@@ -16,6 +16,7 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.util.ProductUtils;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -79,6 +80,10 @@ public class ToaReflectanceValidationOp extends Operator {
                                     sourceProduct.getSceneRasterWidth(),
                                     sourceProduct.getSceneRasterHeight());
         final Product reflProduct = ToaReflectanceOp.create(sourceProduct).getTargetProduct();
+        for (String bandName : EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES) {
+            final Band band = ProductUtils.copyBand(bandName, sourceProduct, reflProduct);
+            band.setSourceImage(sourceProduct.getBand(bandName).getSourceImage());
+        }
 
         BandMathsOp landWaterOp = BandMathsOp.createBooleanExpressionBand(landExpression, reflProduct);
         landWaterBand = landWaterOp.getTargetProduct().getBandAt(0);
