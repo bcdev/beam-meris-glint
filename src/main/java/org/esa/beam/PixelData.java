@@ -26,9 +26,4 @@ public class PixelData {
     // todo - find better name
     public double flintValue = GlintCorrectionOperator.NO_FLINT_VALUE;   /* value of the FLINT processor */
 
-    // MERIS angles
-    public double solzenMer;
-    public double solaziMer;
-    public double viewzenMer;
-    public double viewaziMer;
 }

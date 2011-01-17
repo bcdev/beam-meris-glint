@@ -27,10 +27,6 @@ class Tosa {
     private double[] trans_ozon_up_surf;
     private double[] trans_rayl_down_surf;
     private double[] trans_rayl_up_surf;
-    private double[] trans_ozon_down_meris;
-    private double[] trans_ozon_up_meris;
-    private double[] trans_rayl_down_meris;
-    private double[] trans_rayl_up_meris;
     private double[] lrcPath;
     private double[] ed_toa;
     private double[] edTosa;
@@ -55,10 +51,6 @@ class Tosa {
         trans_ozon_up_surf = new double[length];
         trans_rayl_down_surf = new double[length];
         trans_rayl_up_surf = new double[length];
-        trans_ozon_down_meris = new double[length];
-        trans_ozon_up_meris = new double[length];
-        trans_rayl_down_meris = new double[length];
-        trans_rayl_up_meris = new double[length];
         lrcPath = new double[length];
         ed_toa = new double[length];
         edTosa = new double[length];
@@ -77,22 +69,6 @@ class Tosa {
         double azi_sun_surf_rad = toRadians(pixel.solazi);
         double azi_diff_surf_rad = acos(cos(azi_view_surf_rad - azi_sun_surf_rad));
         double cos_azi_diff_surf = cos(azi_diff_surf_rad);
-
-        double azi_view_meris_rad = toRadians(pixel.viewaziMer);
-        double azi_sun_meris_rad = toRadians((pixel.solaziMer));
-        double azi_diff_meris_rad = acos(cos(azi_view_meris_rad - azi_sun_meris_rad));
-        double cos_azi_diff_meris = cos(azi_diff_meris_rad);
-
-        // todo - different to breadboard line 159 in mer_wat_***01.c
-        double teta_view_meris_rad = teta_view_surf_rad / 1.1364;
-        double teta_sun_meris_rad = toRadians(pixel.solzenMer);
-
-        double sin_teta_view_meris = sin(teta_view_meris_rad);
-        double sin_teta_sun_meris = sin(teta_sun_meris_rad);
-
-        double cos_teta_view_meris = cos(teta_view_meris_rad);
-        double cos_teta_sun_meris = cos(teta_sun_meris_rad);
-
 
         double[] rlTosa = new double[12];
         double[] tau_rayl_standard = new double[12];
@@ -129,11 +105,8 @@ class Tosa {
 
         /* calculate phase function for rayleigh path radiance*/
         double cos_scat_ang_surf = -cos_teta_view_surf * cos_teta_sun_surf - sin_teta_view_surf * sin_teta_sun_surf * cos_azi_diff_surf;
-        double cos_scat_ang_meris = -cos_teta_view_meris * cos_teta_sun_meris - sin_teta_view_meris * sin_teta_sun_meris * cos_azi_diff_meris;
         double phase_rayl_surf = 0.75 * (1.0 + cos_scat_ang_surf * cos_scat_ang_surf);
-        double phase_rayl_meris = 0.75 * (1.0 + cos_scat_ang_meris * cos_scat_ang_meris);
 
-        double[] LRpathDiff = new double[trans_oz_toa_tosa_down_surf.length];
         /* ozon and rayleigh correction layer transmission */
         double ozon_rest_mass = (pixel.ozone / 1000.0 - 0.35); /* conc ozone from MERIS is in DU */
         for (int i = 0; i < trans_oz_toa_tosa_down_surf.length; i++) {
@@ -147,21 +120,6 @@ class Tosa {
             trans_ozon_up_surf[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_view_surf);
             trans_rayl_down_surf[i] = exp(scaledTauToaTosa / cos_teta_sun_surf);
             trans_rayl_up_surf[i] = exp(scaledTauToaTosa / cos_teta_view_surf);
-
-            double LRpath_surf = sun_toa[i] * trans_ozon_down_surf[i] * trans_ozon_up_surf[i] *
-                                 cos_teta_sun_surf / cos_teta_sun_meris * tau_rayl_standard[i] * phase_rayl_surf /
-                                 (4.0 * PI * cos_teta_view_surf);
-
-            trans_ozon_down_meris[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_sun_meris);
-            trans_ozon_up_meris[i] = exp(ozonAbsorption * pixel.ozone / 1000.0 / cos_teta_view_meris);
-            trans_rayl_down_meris[i] = exp(scaledTauToaTosa / cos_teta_sun_meris);
-            trans_rayl_up_meris[i] = exp(scaledTauToaTosa / cos_teta_view_meris);
-
-            double LRpath_meris = sun_toa[i] * trans_ozon_down_surf[i] * tau_rayl_standard[i] * phase_rayl_meris /
-                                  (4.0 * PI * cos_teta_view_meris);
-
-            LRpathDiff[i] = LRpath_surf - LRpath_meris;
-
 
         }
 
@@ -181,7 +139,7 @@ class Tosa {
         /* compute path radiance difference for tosa without - with smile */
         for (int i = 0; i < lTosa.length; i++) {
             /* Calculate L_tosa */
-            lTosa[i] = (lToa[i] - lrcPath[i] * trans_ozon_up_surf[i]) / (trans_oz_toa_tosa_up_surf[i] * trans_rayl_up_surf[i]) + LRpathDiff[i];
+            lTosa[i] = (lToa[i] - lrcPath[i] * trans_ozon_up_surf[i]) / trans_oz_toa_tosa_up_surf[i];
             /* Calculate Lsat_tosa radiance reflectance as input to NN */
             rlTosa[i] = lTosa[i] / edTosa[i];
         }

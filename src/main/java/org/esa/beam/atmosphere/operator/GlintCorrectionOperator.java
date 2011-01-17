@@ -189,7 +189,6 @@ public class GlintCorrectionOperator extends Operator {
     public static final double NO_FLINT_VALUE = -1.0;
     private String merisNeuralNetString;
     private String flintNeuralNetString;
-    private MerisFlightDirection merisFlightDirection;
     private SmileCorrectionAuxdata smileAuxData;
     private RasterDataNode l1FlagsNode;
     private RasterDataNode solzenNode;
@@ -269,11 +268,6 @@ public class GlintCorrectionOperator extends Operator {
             merisNeuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         }
 
-        try {
-            merisFlightDirection = new MerisFlightDirection(merisProduct);
-        } catch (IllegalArgumentException e) {
-            throw new OperatorException("Not able to compute flight direction.", e);
-        }
         if (doSmileCorrection) {
             try {
                 smileAuxData = SmileCorrectionAuxdata.loadAuxdata(merisProduct.getProductType());
@@ -314,22 +308,14 @@ public class GlintCorrectionOperator extends Operator {
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
-                checkForCancellation(pm);
+                checkForCancellation();
                 final int lineIndex = y * targetRectangle.width;
                 final int pixelY = targetRectangle.y + y;
-
-                final double alpha = merisFlightDirection.computeFlightDirectionAlpha(pixelY);
 
                 for (int x = 0; x < targetRectangle.getWidth(); x++) {
                     final int pixelIndex = lineIndex + x;
                     final PixelData inputData = loadMerisPixelData(merisSampleDataMap, pixelIndex);
                     final int pixelX = targetRectangle.x + x;
-                    inputData.solzenMer = merisFlightDirection.getNadirSunZenith(pixelY);
-                    inputData.solaziMer = merisFlightDirection.getNadirSunAzimuth(pixelY);
-                    // todo - different to breadboard line 159 in mer_wat_***01.c
-                    inputData.viewzenMer = inputData.satzen / 1.1364;
-
-                    inputData.viewaziMer = merisFlightDirection.computeMerisFlightDirection(pixelX, alpha);
                     inputData.flintValue = getFlintValue(pixelX, pixelY);
 
                     GlintResult glintResult;
