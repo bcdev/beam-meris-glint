@@ -83,13 +83,13 @@ public class NNffbpAlphaTabFastTest extends TestCase {
             for (int j = 0; j < doubles.length; j++) {
                 doubles[j] += 1.0e-5 * Math.random();
             }
-            final double[] nnCalc = tab.calc(nnInput);
+            final double[] nnCalc = tab.calc(doubles);
             assertTrue(nnCalc[0] != 0.0);
         }
         final long t2 = System.nanoTime();
         final double seconds = (t2 - t1) / 1.0e9;
         System.out.println("testCalcPerformance: " + seconds + " seconds");
-        assertTrue(seconds < 1.0);
+        assertTrue(seconds < 1.5);  // on build server it can take some time
     }
 
     private static NNffbpAlphaTabFast loadTestNet() {
