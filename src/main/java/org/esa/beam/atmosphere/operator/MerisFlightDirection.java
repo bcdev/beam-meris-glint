@@ -74,7 +74,7 @@ public class MerisFlightDirection {
         return data;
     }
 
-    private int findNadirColumnIndex(Product merisProduct) {
+    public static int findNadirColumnIndex(Product merisProduct) {
         final int rasterWidth = merisProduct.getSceneRasterWidth();
         final RasterDataNode grid = merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME);
         final double[] data = new double[rasterWidth];
