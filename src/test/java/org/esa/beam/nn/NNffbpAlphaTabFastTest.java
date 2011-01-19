@@ -60,15 +60,15 @@ public class NNffbpAlphaTabFastTest extends TestCase {
         for (int i = 0; i < N; i++) {
             final double[] doubles = nnInput.clone();
             for (int j = 0; j < doubles.length; j++) {
-                doubles[j] += 1e-5 * Math.random();
+                doubles[j] += 1.0e-5 * Math.random();
             }
-            final NNCalc nnCalc = tab.calcJacobi(nnInput);
+            final NNCalc nnCalc = tab.calcJacobi(doubles);
             assertTrue(nnCalc.getNnOutput()[0] != 0.0);
         }
         final long t2 = System.nanoTime();
-        final double seconds = (t2 - t1) / 1e9;
+        final double seconds = (t2 - t1) / 1.0e9;
         System.out.println("testCalcJacobiPerformance: " + seconds + " seconds");
-        assertTrue(seconds < 1.0);
+        assertTrue(seconds < 1.5);  // on build server it can take some time
     }
 
     public void testCalcPerformance() {
@@ -89,7 +89,7 @@ public class NNffbpAlphaTabFastTest extends TestCase {
         final long t2 = System.nanoTime();
         final double seconds = (t2 - t1) / 1.0e9;
         System.out.println("testCalcPerformance: " + seconds + " seconds");
-        assertTrue(seconds < 1.5);  // on build server it can take some time
+        assertTrue(seconds < 1.0);
     }
 
     private static NNffbpAlphaTabFast loadTestNet() {
