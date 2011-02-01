@@ -466,38 +466,38 @@ public class GlintCorrectionOperator extends Operator {
     private Map<String, ProductData> preLoadMerisSources(Rectangle targetRectangle) {
         final Map<String, ProductData> map = new HashMap<String, ProductData>(27);
 
-        final Tile validationTile = getSourceTile(validationBand, targetRectangle, ProgressMonitor.NULL);
+        final Tile validationTile = getSourceTile(validationBand, targetRectangle);
         map.put(validationBand.getName(), validationTile.getRawSamples());
 
-        final Tile l1FlagTile = getSourceTile(l1FlagsNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile l1FlagTile = getSourceTile(l1FlagsNode, targetRectangle);
         map.put(l1FlagTile.getRasterDataNode().getName(), l1FlagTile.getRawSamples());
 
-        final Tile solzenTile = getSourceTile(solzenNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile solzenTile = getSourceTile(solzenNode, targetRectangle);
         map.put(solzenTile.getRasterDataNode().getName(), solzenTile.getRawSamples());
 
-        final Tile solaziTile = getSourceTile(solaziNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile solaziTile = getSourceTile(solaziNode, targetRectangle);
         map.put(solaziTile.getRasterDataNode().getName(), solaziTile.getRawSamples());
 
-        final Tile satzenTile = getSourceTile(satzenNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile satzenTile = getSourceTile(satzenNode, targetRectangle);
         map.put(satzenTile.getRasterDataNode().getName(), satzenTile.getRawSamples());
 
-        final Tile sataziTile = getSourceTile(sataziNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile sataziTile = getSourceTile(sataziNode, targetRectangle);
         map.put(sataziTile.getRasterDataNode().getName(), sataziTile.getRawSamples());
 
-        final Tile detectorTile = getSourceTile(detectorNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile detectorTile = getSourceTile(detectorNode, targetRectangle);
         map.put(detectorTile.getRasterDataNode().getName(), detectorTile.getRawSamples());
 
-        final Tile altitudeTile = getSourceTile(altitudeNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile altitudeTile = getSourceTile(altitudeNode, targetRectangle);
         map.put(altitudeTile.getRasterDataNode().getName(), altitudeTile.getRawSamples());
 
-        final Tile pressureTile = getSourceTile(pressureNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile pressureTile = getSourceTile(pressureNode, targetRectangle);
         map.put(pressureTile.getRasterDataNode().getName(), pressureTile.getRawSamples());
 
-        final Tile ozoneTile = getSourceTile(ozoneNode, targetRectangle, ProgressMonitor.NULL);
+        final Tile ozoneTile = getSourceTile(ozoneNode, targetRectangle);
         map.put(ozoneTile.getRasterDataNode().getName(), ozoneTile.getRawSamples());
 
         for (RasterDataNode spectralNode : spectralNodes) {
-            final Tile spectralTile = getSourceTile(spectralNode, targetRectangle, ProgressMonitor.NULL);
+            final Tile spectralTile = getSourceTile(spectralNode, targetRectangle);
             map.put(spectralTile.getRasterDataNode().getName(), spectralTile.getRawSamples());
         }
         return map;
