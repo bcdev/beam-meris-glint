@@ -115,12 +115,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         propertyContainer = PropertyContainer.createMapBacked(parameterMap,
                                                                              operatorSpi.getOperatorClass(),
                                                                              parameterDescriptorFactory);
-        try {
-            propertyContainer.setDefaultValues();
-        } catch (ValidationException e) {
-            e.printStackTrace();
-            showErrorDialog(e.getMessage());
-        }
+        propertyContainer.setDefaultValues();
 
         if (propertyContainer.getProperties().length > 0) {
             if (!sourceProductSelectorList.isEmpty()) {
