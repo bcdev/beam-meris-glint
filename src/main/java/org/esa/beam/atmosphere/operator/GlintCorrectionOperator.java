@@ -547,7 +547,7 @@ public class GlintCorrectionOperator extends Operator {
         }
         if (outputTransmittance) {
             addSpectralTargetBands(product, TRANS_BAND_NAMES,
-                                   "Downwelling irrediance transmittance (Ed_Boa/Ed_Tosa) at {0} nm", "dl");
+                                   "Downwelling irradiance transmittance (Ed_Boa/Ed_Tosa) at {0} nm", "dl");
             groupList.add("trans");
         }
         final StringBuilder sb = new StringBuilder();
@@ -569,7 +569,7 @@ public class GlintCorrectionOperator extends Operator {
             addNonSpectralTargetBand(product, FLINT_VALUE, "Flint value", "1/sr");
         }
 
-        addNonSpectralTargetBand(product, BTSM, "Total supended matter scattering", "m^-1");
+        addNonSpectralTargetBand(product, BTSM, "Total suspended matter scattering", "m^-1");
         addNonSpectralTargetBand(product, ATOT, "Absorption at 443 nm of all water constituents", "m^-1");
         addNonSpectralTargetBand(product, ANG_443_865, "\"Aerosol Angstrom coefficient\"", "dl");
     }
