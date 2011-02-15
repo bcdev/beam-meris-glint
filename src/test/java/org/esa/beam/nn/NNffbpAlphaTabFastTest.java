@@ -66,9 +66,20 @@ public class NNffbpAlphaTabFastTest extends TestCase {
             assertTrue(nnCalc.getNnOutput()[0] != 0.0);
         }
         final long t2 = System.nanoTime();
-        final double seconds = (t2 - t1) / 1.0e9;
-        System.out.println("testCalcJacobiPerformance: " + seconds + " seconds");
-        assertTrue(seconds < 1.5);  // on build server it can take some time
+        final double duration = (t2 - t1) / 1.0e9;
+        // using reference time in order to get rid of a constant time the duration is compared to
+        final double refTime = getReferenceTime(N);
+        assertTrue(duration < refTime);
+    }
+
+    private double getReferenceTime(int n) {
+        final long t0 = System.nanoTime();
+        for (int i = 0; i < n*100; i++) { // Jacobi is less than 100 times slower
+            Math.acos(1.0e-5 * Math.random());
+
+       }
+        final long t1 = System.nanoTime();
+        return (t1 - t0) / 1.0e9;
     }
 
     public void testCalcPerformance() {
