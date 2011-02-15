@@ -50,6 +50,13 @@ public class GlintCorrection {
         this.smileAuxdata = smileAuxdata;
     }
 
+    protected double correctViewAngle(double teta_view_deg, int pixelX, int centerPixel, boolean isFullResolution) {
+        final double ang_coef_1 = -0.004793;
+        final double ang_coef_2 = isFullResolution ? 0.0093247 / 4 : 0.0093247;
+        teta_view_deg = teta_view_deg + Math.abs(pixelX - centerPixel) * ang_coef_2 + ang_coef_1;
+        return teta_view_deg;
+    }
+
     /**
      * This method performa the Glint correction.
      *
@@ -60,7 +67,9 @@ public class GlintCorrection {
      */
     public GlintResult perform(PixelData pixel, boolean deriveRwFromPath) {
 
-        final double tetaViewSurfDeg = pixel.satzen; /* viewing zenith angle */
+        double tetaViewSurfDeg = pixel.satzen; /* viewing zenith angle */
+        tetaViewSurfDeg = correctViewAngle(tetaViewSurfDeg, pixel.pixelX, pixel.nadirColumnIndex,
+                                           pixel.isFullResolution);
         final double tetaViewSurfRad = Math.toRadians(tetaViewSurfDeg);
         final double tetaSunSurfDeg = pixel.solzen; /* sun zenith angle */
         final double tetaSunSurfRad = Math.toRadians(tetaSunSurfDeg);

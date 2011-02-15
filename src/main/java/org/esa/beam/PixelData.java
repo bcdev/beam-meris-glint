@@ -10,6 +10,11 @@ import org.esa.beam.atmosphere.operator.GlintCorrectionOperator;
  */
 public class PixelData {
 
+    public int pixelX;
+    public int pixelY;
+    public int nadirColumnIndex;
+    public boolean isFullResolution;
+
     public double[] toa_radiance;     /* toa radiance in W m-2 sr-1 µm-1 */
     public double[] solar_flux;     /* at toa W m-2 µm-1, incl. sun-earth distance */
     public double altitude;

@@ -200,6 +200,9 @@ public class GlintCorrectionOperator extends Operator {
     private RasterDataNode pressureNode;
     private RasterDataNode ozoneNode;
     private Band[] spectralNodes;
+    private int nadirColumnIndex;
+    private boolean isFullResolution;
+
 
     @Override
     public void initialize() throws OperatorException {
@@ -275,6 +278,8 @@ public class GlintCorrectionOperator extends Operator {
                 throw new OperatorException("Not able to load auxiliary data for SMILE correction.", e);
             }
         }
+        nadirColumnIndex = MerisFlightDirection.findNadirColumnIndex(merisProduct);
+        isFullResolution = isProductMerisFullResoultion(merisProduct);
 
         // copy all source bands yet ignored
         for (final Band sourceBand : merisProduct.getBands()) {
@@ -285,6 +290,12 @@ public class GlintCorrectionOperator extends Operator {
 
         setTargetProduct(outputProduct);
     }
+
+    private static boolean isProductMerisFullResoultion(final Product product) {
+        final String productType = product.getProductType();
+        return productType.contains("FR") || productType.contains("FSG");
+    }
+
 
     private void copySourceBand(Band sourceBand, Product targetProduct) {
         final Band targetBand = ProductUtils.copyBand(sourceBand.getName(), merisProduct, targetProduct);
@@ -317,6 +328,8 @@ public class GlintCorrectionOperator extends Operator {
                     final PixelData inputData = loadMerisPixelData(merisSampleDataMap, pixelIndex);
                     final int pixelX = targetRectangle.x + x;
                     inputData.flintValue = getFlintValue(pixelX, pixelY);
+                    inputData.pixelX = pixelX;
+                    inputData.pixelY = pixelY;
 
                     GlintResult glintResult;
                     if (aatsrFlintCorrection != null && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
@@ -434,6 +447,8 @@ public class GlintCorrectionOperator extends Operator {
 
     private PixelData loadMerisPixelData(Map<String, ProductData> sourceTileMap, int index) {
         final PixelData pixelData = new PixelData();
+        pixelData.isFullResolution = isFullResolution;
+        pixelData.nadirColumnIndex = nadirColumnIndex;
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
         pixelData.l1Flag = sourceTileMap.get(MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
         pixelData.detectorIndex = sourceTileMap.get(MERIS_DETECTOR_INDEX_DS_NAME).getElemIntAt(index);
