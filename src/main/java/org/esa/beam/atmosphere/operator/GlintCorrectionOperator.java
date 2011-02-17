@@ -140,7 +140,7 @@ public class GlintCorrectionOperator extends Operator {
     private boolean outputTosa;
 
     @Parameter(defaultValue = "true", label = "Output water leaving reflectance",
-               description = "Toggles the output of water leaving irrediance reflectance.")
+               description = "Toggles the output of water leaving irradiance reflectance.")
     private boolean outputReflec;
 
     @Parameter(defaultValue = "true", label = "Output path reflectance",
@@ -148,7 +148,7 @@ public class GlintCorrectionOperator extends Operator {
     private boolean outputPath;
 
     @Parameter(defaultValue = "true", label = "Output transmittance",
-               description = "Toggles the output of downwelling irrediance transmittance.")
+               description = "Toggles the output of downwelling irradiance transmittance.")
     private boolean outputTransmittance;
 
     @Parameter(defaultValue = "false",
