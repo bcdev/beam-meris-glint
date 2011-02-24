@@ -3,6 +3,7 @@ package org.esa.beam.atmosphere.operator;
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.PixelData;
 import org.esa.beam.collocation.CollocateOp;
+import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
@@ -253,7 +254,7 @@ public class GlintCorrectionOperator extends Operator {
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
 
         addTargetBands(outputProduct);
-        ProductUtils.copyFlagBands(merisProduct, outputProduct);
+
         Band agcFlagsBand = outputProduct.addBand(AGC_FLAG_BAND_NAME, ProductData.TYPE_UINT16);
         final FlagCoding agcFlagCoding = createAgcFlagCoding();
         agcFlagsBand.setSampleCoding(agcFlagCoding);
@@ -281,25 +282,25 @@ public class GlintCorrectionOperator extends Operator {
         nadirColumnIndex = MerisFlightDirection.findNadirColumnIndex(merisProduct);
         isFullResolution = isProductMerisFullResoultion(merisProduct);
 
-        // copy all source bands yet ignored
-        for (final Band sourceBand : merisProduct.getBands()) {
-            if (sourceBand.getSpectralBandIndex() == -1 && !outputProduct.containsBand(sourceBand.getName())) {
-                copySourceBand(sourceBand, outputProduct);
+        ProductUtils.copyFlagBands(merisProduct, outputProduct);
+        for (Band srcBand : merisProduct.getBands()) {
+            if (srcBand.getFlagCoding() != null) {
+                Band targetBand = outputProduct.getBand(srcBand.getName());
+                targetBand.setSourceImage(srcBand.getSourceImage());
             }
         }
 
+        // copy detector index band
+        if (merisProduct.containsBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME)) {
+            Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct, outputProduct);
+            targetBand.setSourceImage(merisProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME).getSourceImage());
+        }
         setTargetProduct(outputProduct);
     }
 
     private static boolean isProductMerisFullResoultion(final Product product) {
         final String productType = product.getProductType();
         return productType.contains("FR") || productType.contains("FSG");
-    }
-
-
-    private void copySourceBand(Band sourceBand, Product targetProduct) {
-        final Band targetBand = ProductUtils.copyBand(sourceBand.getName(), merisProduct, targetProduct);
-        targetBand.setSourceImage(sourceBand.getSourceImage());
     }
 
 
@@ -531,9 +532,9 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "ANCIL", "Missing/OOR auxiliary data", GlintCorrection.ANCIL);
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
         addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
-                         GlintCorrection.HAS_FLINT);
+                GlintCorrection.HAS_FLINT);
         addFlagAttribute(flagCoding, "INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
-                         GlintCorrection.INVALID);
+                GlintCorrection.INVALID);
 
         return flagCoding;
     }
@@ -613,9 +614,9 @@ public class GlintCorrectionOperator extends Operator {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE",
-                                 Color.WHITE, 0.5f));
+                Color.WHITE, 0.5f));
         maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR",
-                                 Color.ORANGE, 0.5f));
+                Color.ORANGE, 0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
         maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
