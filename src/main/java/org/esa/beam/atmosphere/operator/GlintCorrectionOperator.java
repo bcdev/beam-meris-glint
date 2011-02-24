@@ -396,8 +396,6 @@ public class GlintCorrectionOperator extends Operator {
                                       GlintResult glintResult) {
         final ProductData agcFlagTile = targetSampleData.get(AGC_FLAG_BAND_NAME);
         agcFlagTile.setElemIntAt(pixelIndex, glintResult.getFlag());
-        final ProductData l1FlagTile = targetSampleData.get(MERIS_L1B_FLAGS_DS_NAME);
-        l1FlagTile.setElemIntAt(pixelIndex, inputData.l1Flag);
         final ProductData angTile = targetSampleData.get(ANG_443_865);
         angTile.setElemDoubleAt(pixelIndex, glintResult.getAngstrom());
         final ProductData tau550Tile = targetSampleData.get(TAU_550);
