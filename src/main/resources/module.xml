@@ -32,6 +32,7 @@
         <![CDATA[
         <p>Changes in version 1.2<br/>
         - added groups for spectral bands
+        - added optional normalization of bidirectional reflectances to nadir
         - added optional smile corrections
         - new neural net for MERIS with better frequency distribution of IOPs, extended domain of concentrations
           and correction for calculation of transmission

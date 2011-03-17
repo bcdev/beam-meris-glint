@@ -69,6 +69,8 @@ public class GlintCorrectionOperator extends Operator {
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
     private static final String MERIS_ATMOSPHERIC_NET_NAME = "20x25x45_55990.1.net";
     private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
+    private static final String NORMALIZATION_NET_NAME = "90_2.8.net";
+
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
@@ -132,6 +134,11 @@ public class GlintCorrectionOperator extends Operator {
     private Product targetProduct;
 
     @Parameter(defaultValue = "false",
+               label = "Perform normalization of bidirectional reflectances",
+               description = "Whether to perform normalization of bidirectional reflectances to nadir.")
+    private boolean doNormalization;
+
+    @Parameter(defaultValue = "false",
                label = "Perform SMILE correction",
                description = "Whether to perform SMILE correction.")
     private boolean doSmileCorrection;
@@ -190,6 +197,7 @@ public class GlintCorrectionOperator extends Operator {
     public static final double NO_FLINT_VALUE = -1.0;
     private String merisNeuralNetString;
     private String flintNeuralNetString;
+    private String normalizationNeuralNetString;
     private SmileCorrectionAuxdata smileAuxData;
     private RasterDataNode l1FlagsNode;
     private RasterDataNode solzenNode;
@@ -267,11 +275,16 @@ public class GlintCorrectionOperator extends Operator {
         validationBand = validationOp.getTargetProduct().getBandAt(0);
 
         if (useFlint && aatsrProduct != null) {
-            flintNeuralNetString = readNeuralNetString(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
+            InputStream neuralNetStream = getNeuralNetStream(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
+            flintNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         } else {
-            merisNeuralNetString = readNeuralNetString(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+            InputStream neuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+            merisNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
-
+        if (doNormalization) {
+            final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
+            normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
+        }
         if (doSmileCorrection) {
             try {
                 smileAuxData = SmileCorrectionAuxdata.loadAuxdata(merisProduct.getProductType());
@@ -292,8 +305,10 @@ public class GlintCorrectionOperator extends Operator {
 
         // copy detector index band
         if (merisProduct.containsBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME)) {
-            Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct, outputProduct);
-            targetBand.setSourceImage(merisProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME).getSourceImage());
+            Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct,
+                                                    outputProduct);
+            targetBand.setSourceImage(
+                    merisProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME).getSourceImage());
         }
         setTargetProduct(outputProduct);
     }
@@ -312,11 +327,17 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
+            NNffbpAlphaTabFast normalizationNet = null;
+            if (doNormalization) {
+                normalizationNet = new NNffbpAlphaTabFast(normalizationNeuralNetString);
+            }
+
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
-                                                                       smileAuxData);
+                                                                       smileAuxData, normalizationNet);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
-                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData);
+                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
+                                                           normalizationNet);
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
@@ -530,9 +551,9 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "ANCIL", "Missing/OOR auxiliary data", GlintCorrection.ANCIL);
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
         addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
-                GlintCorrection.HAS_FLINT);
+                         GlintCorrection.HAS_FLINT);
         addFlagAttribute(flagCoding, "INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
-                GlintCorrection.INVALID);
+                         GlintCorrection.INVALID);
 
         return flagCoding;
     }
@@ -551,7 +572,13 @@ public class GlintCorrectionOperator extends Operator {
             groupList.add("tosa_reflec");
         }
         if (outputReflec) {
-            addSpectralTargetBands(product, REFLEC_BAND_NAMES, "Water leaving radiance reflectance at {0} nm", "sr^-1");
+            String descriptionPattern;
+            if (doNormalization) {
+                descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
+            } else {
+                descriptionPattern = "Water leaving radiance reflectance at {0} nm";
+            }
+            addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
             groupList.add("reflec");
         }
         if (outputPath) {
@@ -612,9 +639,9 @@ public class GlintCorrectionOperator extends Operator {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE",
-                Color.WHITE, 0.5f));
+                                 Color.WHITE, 0.5f));
         maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR",
-                Color.ORANGE, 0.5f));
+                                 Color.ORANGE, 0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
         maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
@@ -633,7 +660,7 @@ public class GlintCorrectionOperator extends Operator {
                                          expression, color, transparency);
     }
 
-    private String readNeuralNetString(String resourceNetName, File neuralNetFile) {
+    private InputStream getNeuralNetStream(String resourceNetName, File neuralNetFile) {
         InputStream neuralNetStream;
         if (neuralNetFile.getName().equals(resourceNetName)) {
             neuralNetStream = getClass().getResourceAsStream(resourceNetName);
@@ -644,7 +671,10 @@ public class GlintCorrectionOperator extends Operator {
                 throw new OperatorException(e);
             }
         }
+        return neuralNetStream;
+    }
 
+    private String readNeuralNetFromStream(InputStream neuralNetStream) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(neuralNetStream));
         try {
             String line = reader.readLine();

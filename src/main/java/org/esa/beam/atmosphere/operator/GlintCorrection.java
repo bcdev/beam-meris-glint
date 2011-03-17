@@ -39,15 +39,19 @@ public class GlintCorrection {
 
     private final NNffbpAlphaTabFast atmosphereNet;
     private final SmileCorrectionAuxdata smileAuxdata;
+    private NNffbpAlphaTabFast normalizationNet;
 
 
     /**
-     * @param atmosphereNet the neural net for atmospheric correction
-     * @param smileAuxdata  can be {@code null} if SMILE correction shall not be performed
+     * @param atmosphereNet    the neural net for atmospheric correction
+     * @param smileAuxdata     can be {@code null} if SMILE correction shall not be performed
+     * @param normalizationNet can be {@code null} if normalization shall not be performed
      */
-    public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata) {
+    public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
+                           NNffbpAlphaTabFast normalizationNet) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
+        this.normalizationNet = normalizationNet;
     }
 
     protected double correctViewAngle(double teta_view_deg, int pixelX, int centerPixel, boolean isFullResolution) {
@@ -73,7 +77,8 @@ public class GlintCorrection {
         final double tetaViewSurfRad = Math.toRadians(tetaViewSurfDeg);
         final double tetaSunSurfDeg = pixel.solzen; /* sun zenith angle */
         final double tetaSunSurfRad = Math.toRadians(tetaSunSurfDeg);
-        final double aziDiffSurfRad = Math.toRadians(getAzimuthDifference(pixel));
+        final double aziDiffSurfDeg = getAzimuthDifference(pixel);
+        final double aziDiffSurfRad = Math.toRadians(aziDiffSurfDeg);
         final double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
         final double cosTetaSunSurfRad = Math.cos(tetaSunSurfRad);
 
@@ -157,6 +162,19 @@ public class GlintCorrection {
                 reflec[i] = (rlTosa[i] - rwPaths[i]) / transu * Math.PI;
             } else {
                 reflec[i] *= Math.PI;
+            }
+        }
+        if (normalizationNet != null) {
+            double[] normInNet = new double[15];
+            normInNet[0] = tetaSunSurfDeg;
+            normInNet[1] = tetaViewSurfDeg;
+            normInNet[2] = aziDiffSurfDeg;
+            for (int i = 0; i < 12; i++) {
+                normInNet[i + 3] = Math.log(reflec[i]);
+            }
+            final double[] normOutNet = normalizationNet.calc(normInNet);
+            for (int i = 0; i < 12; i++) {
+                reflec[i] = Math.exp(normOutNet[i]);
             }
         }
         glintResult.setReflec(reflec);
