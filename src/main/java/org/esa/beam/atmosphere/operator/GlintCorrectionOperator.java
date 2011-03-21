@@ -274,12 +274,12 @@ public class GlintCorrectionOperator extends Operator {
                                                                                           cloudIceExpression);
         validationBand = validationOp.getTargetProduct().getBandAt(0);
 
+        InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+        merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
+
         if (useFlint && aatsrProduct != null) {
             InputStream neuralNetStream = getNeuralNetStream(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
             flintNeuralNetString = readNeuralNetFromStream(neuralNetStream);
-        } else {
-            InputStream neuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
-            merisNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
         if (doNormalization) {
             final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
