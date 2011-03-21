@@ -247,7 +247,9 @@ public class NNffbpAlphaTabFast {
                 }
             }
         } finally {
-            in.close();
+            if (in != null) {
+                in.close();
+            }
         }
     }
 
