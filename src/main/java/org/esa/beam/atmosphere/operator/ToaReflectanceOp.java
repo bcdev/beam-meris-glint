@@ -1,7 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
+import com.bc.ceres.glevel.MultiLevelImage;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -79,66 +79,32 @@ public class ToaReflectanceOp extends Operator {
             bandMap.put(toaReflBand, radianceBand);
         }
         ProductUtils.copyFlagBands(sourceProduct, targetProduct);
-        bandMap.put(targetProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME),
-                    sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME));
+        copyFlagSourceImages();
 
-        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID",
-                                                                               sourceProduct);
+        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
 
     }
 
+    private void copyFlagSourceImages() {
+        final Band[] bands = targetProduct.getBands();
+        for (Band band : bands) {
+            if (band.isFlagBand()) {
+                final MultiLevelImage sourceFlagImage = sourceProduct.getBand(band.getName()).getSourceImage();
+                band.setSourceImage(sourceFlagImage);
+            }
+        }
+    }
+
     @Override
     public void computeTile(Band targetBand, Tile targetTile, ProgressMonitor pm) throws OperatorException {
-
-
-        if (targetBand.getFlagCoding() == null) {
-            computeToaReflectance(targetBand, targetTile, pm);
-        } else {
-            copyFlagBand(targetBand, targetTile, pm);
-        }
-
-
-    }
-
-    private void copyFlagBand(Band targetBand, Tile targetTile, ProgressMonitor pm) {
-        final Band flagBand = bandMap.get(targetBand);
+        checkForCancellation();
         try {
-            pm.beginTask(String.format("Copying %s", flagBand.getName()), 2);
-            final Tile flagTile = getSourceTile(flagBand, targetTile.getRectangle(),
-                                                SubProgressMonitor.create(pm, 1));
-            final ProductData targetSamples = targetTile.getRawSamples();
-            final ProductData flagSamples = flagTile.getRawSamples();
-            final int height = targetTile.getHeight();
-            final int width = targetTile.getWidth();
-            for (int y = 0; y < height; y++) {
-                checkForCancellation(pm);
-                final int lineIndex = y * width;
-                for (int x = 0; x < width; x++) {
-                    final int index = lineIndex + x;
-                    targetSamples.setElemIntAt(index, flagSamples.getElemIntAt(index));
-                }
-            }
-            targetTile.setRawSamples(targetSamples);
-            pm.worked(1);
-        } finally {
-            pm.done();
-        }
-    }
-
-    private void computeToaReflectance(Band targetBand, Tile targetTile, ProgressMonitor pm) {
-        final String taskName = MessageFormat.format("Computing TOA Reflectance for band {0}",
-                                                     targetBand.getName());
-        try {
-            pm.beginTask(taskName, targetTile.getHeight() * 5);
             final Band sourceBand = bandMap.get(targetBand);
             final RasterDataNode solzenGrid = sourceProduct.getRasterDataNode(SOLZEN_GRID_NAME);
-            final Tile sourceTile = getSourceTile(sourceBand, targetTile.getRectangle(),
-                                                  SubProgressMonitor.create(pm, targetTile.getHeight()));
-            final Tile solzenTile = getSourceTile(solzenGrid, targetTile.getRectangle(),
-                                                  SubProgressMonitor.create(pm, targetTile.getHeight()));
-            final Tile invalidTile = getSourceTile(invalidBand, targetTile.getRectangle(),
-                                                   SubProgressMonitor.create(pm, targetTile.getHeight()));
+            final Tile sourceTile = getSourceTile(sourceBand, targetTile.getRectangle());
+            final Tile solzenTile = getSourceTile(solzenGrid, targetTile.getRectangle());
+            final Tile invalidTile = getSourceTile(invalidBand, targetTile.getRectangle());
 
             final ProductData toaReflSamples = targetTile.getRawSamples();
             final ProductData radianceSamples = sourceTile.getRawSamples();
@@ -161,12 +127,12 @@ public class ToaReflectanceOp extends Operator {
                         toaReflSamples.setElemDoubleAt(index, sample);
                     }
                 }
-                pm.worked(2);
             }
             targetTile.setRawSamples(toaReflSamples);
         } finally {
             pm.done();
         }
+
     }
 
     @Override
