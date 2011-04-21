@@ -17,34 +17,35 @@ import org.esa.beam.framework.datamodel.ProductNodeEvent;
 import org.esa.beam.framework.datamodel.ProductNodeListener;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.GPF;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.annotations.ParameterDescriptorFactory;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.internal.RasterDataNodeValues;
+import org.esa.beam.framework.gpf.ui.OperatorMenuSupport;
 import org.esa.beam.framework.gpf.ui.SingleTargetProductDialog;
 import org.esa.beam.framework.gpf.ui.SourceProductSelector;
 import org.esa.beam.framework.gpf.ui.TargetProductSelectorModel;
 import org.esa.beam.framework.ui.AppContext;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.awt.Font;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 /**
  * GLINT Dialog class
@@ -53,7 +54,8 @@ import java.awt.event.ActionEvent;
  * @version $Revision: 2703 $ $Date: 2010-01-21 13:51:07 +0100 (Do, 21 Jan 2010) $
  */
 public class GlintDialog extends SingleTargetProductDialog {
-     private String operatorName;
+
+    private String operatorName;
     private List<SourceProductSelector> sourceProductSelectorList;
     private Map<Field, SourceProductSelector> sourceProductSelectorMap;
     private Map<String, Object> parameterMap;
@@ -98,7 +100,7 @@ public class GlintDialog extends SingleTargetProductDialog {
 
         SourceProductSelector selectorMeris = sourceProductSelectorList.get(0);
         ioParametersPanel.add(selectorMeris.createDefaultPanel());
-        
+
         ioParametersPanel.add(createAatsrProductUsagePanel());
         ioParametersPanel.add(tableLayout.createVerticalSpacer());
 
@@ -113,8 +115,8 @@ public class GlintDialog extends SingleTargetProductDialog {
         ParameterDescriptorFactory parameterDescriptorFactory = new ParameterDescriptorFactory();
         parameterMap = new HashMap<String, Object>(17);
         propertyContainer = PropertyContainer.createMapBacked(parameterMap,
-                                                                             operatorSpi.getOperatorClass(),
-                                                                             parameterDescriptorFactory);
+                                                              operatorSpi.getOperatorClass(),
+                                                              parameterDescriptorFactory);
         propertyContainer.setDefaultValues();
 
         if (propertyContainer.getProperties().length > 0) {
@@ -127,7 +129,8 @@ public class GlintDialog extends SingleTargetProductDialog {
                         rdnTypeProperties.add(parameterDescriptor);
                     }
                 }
-                rasterDataNodeTypeProperties = rdnTypeProperties.toArray(new PropertyDescriptor[rdnTypeProperties.size()]);
+                rasterDataNodeTypeProperties = rdnTypeProperties.toArray(
+                        new PropertyDescriptor[rdnTypeProperties.size()]);
             }
 
             PropertyPane parametersPane = new PropertyPane(propertyContainer);
@@ -135,7 +138,8 @@ public class GlintDialog extends SingleTargetProductDialog {
             Component[] components = paremetersPanel.getComponents();
 
             for (int i = 0; i < components.length - 1; i++) {
-                if (components[i] instanceof JCheckBox && ((JCheckBox) components[i]).getText().startsWith("Use FLINT value")) {
+                if (components[i] instanceof JCheckBox && ((JCheckBox) components[i]).getText().startsWith(
+                        "Use FLINT value")) {
                     JCheckBox useFlintCheckBox = (JCheckBox) paremetersPanel.getComponents()[i];
                     useFlintCheckBox.setEnabled(false);
                 }
@@ -165,20 +169,25 @@ public class GlintDialog extends SingleTargetProductDialog {
             });
         }
 
+        OperatorMenuSupport menuSupport = new OperatorMenuSupport(this.getJDialog(), operatorSpi.getOperatorClass(),
+                                                                  propertyContainer, helpID);
+        getJDialog().setJMenuBar(menuSupport.createDefaultMenue());
+
+
     }
 
     private JPanel createAatsrProductUsagePanel() {
-	    TableLayout layout = new TableLayout(1);
+        TableLayout layout = new TableLayout(1);
         layout.setTableAnchor(TableLayout.Anchor.WEST);
         layout.setTableFill(TableLayout.Fill.HORIZONTAL);
         layout.setTableWeightX(1);
 
         JPanel panel = new JPanel(layout);
         panel.setBorder(BorderFactory.createTitledBorder(null, "AATSR (FLINT) Product Usage",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                new Font("Tahoma", 0, 11),
-                new Color(0, 70, 213)));
+                                                         TitledBorder.DEFAULT_JUSTIFICATION,
+                                                         TitledBorder.DEFAULT_POSITION,
+                                                         new Font("Tahoma", 0, 11),
+                                                         new Color(0, 70, 213)));
 
         if (useFlintProductCheckBox == null) {
             useFlintProductCheckBox = new JCheckBox("Create FLINT product from AATSR L1b and use as AGC input");
@@ -198,7 +207,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         useFlintProductCheckBox.addActionListener(useFlintProductListener);
 
         return panel;
-	}
+    }
 
     private void initSourceProductSelectors(OperatorSpi operatorSpi) {
         final Field[] fields = operatorSpi.getOperatorClass().getDeclaredFields();
@@ -264,7 +273,7 @@ public class GlintDialog extends SingleTargetProductDialog {
                 }
             }
         }
-        if (propertyContainer != null)  {
+        if (propertyContainer != null) {
             for (Property property : propertyContainer.getProperties()) {
                 // set 'useFlint' parameter according to useFlintProductCheckBox:
                 if (property.getDescriptor().getName().equals("useFlint")) {
@@ -285,7 +294,7 @@ public class GlintDialog extends SingleTargetProductDialog {
             String flintInfoMessage = "The FLINT processor is a beta version and will be further improved in the\n" +
                                       "frame of other projects. The current results should be interpreted with care.";
             showSuppressibleInformationDialog(flintInfoMessage, "");
-        }  
+        }
     }
 
 
@@ -342,7 +351,7 @@ public class GlintDialog extends SingleTargetProductDialog {
     public void setTargetProductNameSuffix(String suffix) {
         targetProductNameSuffix = suffix;
     }
-    
+
     private static class AnnotatedSourceProductFilter implements ProductFilter {
 
         private final SourceProduct annot;
