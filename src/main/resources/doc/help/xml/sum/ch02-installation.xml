@@ -8,7 +8,7 @@
             in advance:
             <itemizedlist mark='bullet'>
                 <listitem>
-                    BEAM, version 4.6 or 4.6.1
+                    BEAM, version 4.9 or higher
                 </listitem>
             </itemizedlist>
             The BEAM software can be obtained from the BEAM download page
@@ -16,21 +16,24 @@
         </para>
 
         <para>
-            The GLINT software delivery consists of four jar files: the AGC and FLINT main modules and
-            adjusted BRR (Bottom of Rayleigh Reflectance) and SDR (Surface Directional Reflectance)
-            modules, which provide additional Java classes used by GLINT.
+            The GLINT software delivery consists of five jar files: the AGC and FLINT main modules and
+            adjusted BRR (Bottom of Rayleigh Reflectance), SDR (Surface Directional Reflectance)
+            modules and L2Auxdata, which provide additional Java classes used by GLINT.
             <itemizedlist mark='bullet'>
                 <listitem>
-                    flint-processor-1.1.jar
+                    flint-processor-1.1.2.jar
                 </listitem>
                 <listitem>
-                    meris-glint-1.1.jar
+                    beam-meris-glint-1.2.jar
                 </listitem>
                 <listitem>
-                    beam-meris-brr-2.0.3-SNAPSHOT.jar
+                    beam-meris-brr-2.3.jar
                 </listitem>
                 <listitem>
-                    beam-meris-sdr-2.1-SNAPSHOT.jar
+                    beam-meris-sdr-2.3.jar
+                </listitem>
+                <listitem>
+                    beam-meris-l2auxdata-1.2.jar
                 </listitem>
             </itemizedlist>
 
@@ -39,11 +42,11 @@
             Note that existing versions of these jar files need to be replaced/overwritten.
             There should not be more than one jar file for each of these modules in the
             'modules' folder!
-            
+
         </para>
 
         <figure id="figure.installation.beammodules">
-            <title>Installation of MERIS Glint Processor jar files in BEAM modules folder (shown for Windows XP)</title>
+            <title>Installation of MERIS Glint Processor jar files in BEAM modules folder (shown for Windows 7)</title>
             <graphic scale="40" fileref="figures/beammodules.png"/>
         </figure>
 
@@ -56,6 +59,5 @@
         </para>
     </sect1>
 
-    
 
 </chapter>
