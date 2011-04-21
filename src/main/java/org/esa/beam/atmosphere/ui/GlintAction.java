@@ -17,9 +17,10 @@ public class GlintAction extends AbstractVisatAction {
     @Override
     public void actionPerformed(CommandEvent event) {
         final String version = GlintCorrectionOperator.GLINT_CORRECTION_VERSION;
+        final String helpId = event.getCommand().getHelpId();
         final GlintDialog productDialog = new GlintDialog(
                 "Meris.GlintCorrection", getAppContext(),
-                "MERIS/AATSR Glint Correction (AGC/FLINT) - v" + version, "merisGlint");
+                "MERIS/AATSR Glint Correction (AGC/FLINT) - v" + version, helpId);
         productDialog.getJDialog().setPreferredSize(new Dimension(600, 550));
         productDialog.show();
     }

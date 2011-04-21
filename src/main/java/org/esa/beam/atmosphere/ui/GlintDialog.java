@@ -67,10 +67,6 @@ public class GlintDialog extends SingleTargetProductDialog {
     private PropertyDescriptor[] rasterDataNodeTypeProperties;
     private ProductChangedHandler productChangedHandler;
 
-    public static GlintDialog createDefaultDialog(String operatorName, AppContext appContext) {
-        return new GlintDialog(operatorName, appContext, operatorName, null);
-    }
-
     public GlintDialog(String operatorName, AppContext appContext, String title, String helpID) {
         super(appContext, title, helpID);
         this.operatorName = operatorName;

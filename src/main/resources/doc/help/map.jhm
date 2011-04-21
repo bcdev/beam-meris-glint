@@ -5,7 +5,7 @@
 
 <map version="2.0">
 
-    <mapID target="merisGlint" url="meris-glint/Meris-Glint.html"/>
+    <mapID target="merisGlint" url="meris-glint/MerisGlint.html"/>
     <mapID target="merisGlintIndex" url="meris-glint/index.html"/>
     <mapID target="merisGlintIntro" url="meris-glint/ch01.html"/>
     <mapID target="merisGlintInstall" url="meris-glint/ch02.html"/>
