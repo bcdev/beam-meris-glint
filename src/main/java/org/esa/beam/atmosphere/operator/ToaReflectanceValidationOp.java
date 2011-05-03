@@ -1,7 +1,6 @@
 package org.esa.beam.atmosphere.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -113,19 +112,16 @@ public class ToaReflectanceValidationOp extends Operator {
             pm.beginTask("Computing TOA_Reflectance classification", 4 * targetTile.getHeight());
             ProductData targetSamples = targetTile.getRawSamples();
 
-            final Tile landWaterTile = getSourceTile(landWaterBand, targetTile.getRectangle(),
-                                                     SubProgressMonitor.create(pm, targetTile.getHeight()));
-            final Tile cloudIceTile = getSourceTile(cloudIceBand, targetTile.getRectangle(),
-                                                    SubProgressMonitor.create(pm, targetTile.getHeight()));
-            final Tile rlToaOorTile = getSourceTile(rlToaOorBand, targetTile.getRectangle(),
-                                                    SubProgressMonitor.create(pm, targetTile.getHeight()));
+            final Tile landWaterTile = getSourceTile(landWaterBand, targetTile.getRectangle());
+            final Tile cloudIceTile = getSourceTile(cloudIceBand, targetTile.getRectangle());
+            final Tile rlToaOorTile = getSourceTile(rlToaOorBand, targetTile.getRectangle());
             final ProductData landWaterSamples = landWaterTile.getRawSamples();
             final ProductData cloudIceSamples = cloudIceTile.getRawSamples();
             final ProductData rlToaOorSamples = rlToaOorTile.getRawSamples();
 
 
             for (int y = 0; y < targetTile.getHeight(); y++) {
-                checkForCancellation(pm);
+                checkForCancellation();
                 final int lineIndex = y * targetTile.getWidth();
 
                 for (int x = 0; x < targetTile.getWidth(); x++) {
