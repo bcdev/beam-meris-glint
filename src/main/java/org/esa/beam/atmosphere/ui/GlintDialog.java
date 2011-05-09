@@ -22,7 +22,8 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.annotations.ParameterDescriptorFactory;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.internal.RasterDataNodeValues;
-import org.esa.beam.framework.gpf.ui.OperatorMenuSupport;
+import org.esa.beam.framework.gpf.ui.OperatorMenu;
+import org.esa.beam.framework.gpf.ui.OperatorParameterSupport;
 import org.esa.beam.framework.gpf.ui.SingleTargetProductDialog;
 import org.esa.beam.framework.gpf.ui.SourceProductSelector;
 import org.esa.beam.framework.gpf.ui.TargetProductSelectorModel;
@@ -165,11 +166,13 @@ public class GlintDialog extends SingleTargetProductDialog {
             });
         }
 
-        OperatorMenuSupport menuSupport = new OperatorMenuSupport(this.getJDialog(), operatorSpi.getOperatorClass(),
-                                                                  propertyContainer, helpID);
-        getJDialog().setJMenuBar(menuSupport.createDefaultMenue());
-
-
+        final OperatorParameterSupport parameterSupport = new OperatorParameterSupport(operatorSpi.getOperatorClass(),
+                                                                                       propertyContainer,
+                                                                                       parameterMap,
+                                                                                       null);
+        OperatorMenu menuSupport = new OperatorMenu(this.getJDialog(), operatorSpi.getOperatorClass(),
+                                                    parameterSupport, helpID);
+        getJDialog().setJMenuBar(menuSupport.createDefaultMenu());
     }
 
     private JPanel createAatsrProductUsagePanel() {
