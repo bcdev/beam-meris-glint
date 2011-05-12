@@ -4,7 +4,7 @@
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-glint</artifactId>
     <packaging>jar</packaging>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2</version>
     <name>MERIS Glint Project</name>
 
     <pluginRepositories>
@@ -62,8 +62,8 @@
            -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <beam.version>4.9-SNAPSHOT</beam.version>
-        <ceres.version>0.12-SNAPSHOT</ceres.version>
+        <beam.version>4.9</beam.version>
+        <ceres.version>0.12</ceres.version>
     </properties>
     <dependencies>
 
@@ -112,17 +112,17 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-envisat-reader</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-meris-radiometry</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam.glint</groupId>
             <artifactId>flint-processor</artifactId>
-            <version>1.2-SNAPSHOT</version>
+            <version>1.2</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
