@@ -40,18 +40,21 @@ public class GlintCorrection {
     private final NNffbpAlphaTabFast atmosphereNet;
     private final SmileCorrectionAuxdata smileAuxdata;
     private NNffbpAlphaTabFast normalizationNet;
+    private ReflectanceEnum outputReflecAs;
 
 
     /**
      * @param atmosphereNet    the neural net for atmospheric correction
      * @param smileAuxdata     can be {@code null} if SMILE correction shall not be performed
      * @param normalizationNet can be {@code null} if normalization shall not be performed
+     * @param outputReflecAs
      */
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
-                           NNffbpAlphaTabFast normalizationNet) {
+                           NNffbpAlphaTabFast normalizationNet, ReflectanceEnum outputReflecAs) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
         this.normalizationNet = normalizationNet;
+        this.outputReflecAs = outputReflecAs;
     }
 
     protected double correctViewAngle(double teta_view_deg, int pixelX, int centerPixel, boolean isFullResolution) {
@@ -155,13 +158,19 @@ public class GlintCorrection {
         final double[] rwPaths = Arrays.copyOfRange(atmoOutnet, 12, 24);
         glintResult.setPath(rwPaths);
         final double[] reflec = Arrays.copyOfRange(atmoOutnet, 0, 12);
+        double factor;
+        if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
+            factor = Math.PI; // irradiance reflectance, comparable with MERIS
+        } else {
+            factor = 1.0; // radiance reflectance
+        }
         for (int i = 0; i < reflec.length; i++) {
             if (deriveRwFromPath) {
                 final double v = transds[i]; /*probably a bug: / cosTetaSunRad **/
                 double transu = Math.exp(Math.log(v) * (cosTetaSunSurfRad / cosTetaViewSurfRad));
-                reflec[i] = (rlTosa[i] - rwPaths[i]) / transu * Math.PI;
+                reflec[i] = (rlTosa[i] - rwPaths[i]) / transu * factor;
             } else {
-                reflec[i] *= Math.PI;
+                reflec[i] *= factor;
             }
         }
         glintResult.setReflec(reflec);

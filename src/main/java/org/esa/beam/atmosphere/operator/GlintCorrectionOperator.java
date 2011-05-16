@@ -141,22 +141,28 @@ public class GlintCorrectionOperator extends Operator {
     private Product targetProduct;
 
     @Parameter(defaultValue = "false",
-               label = "Perform SMILE correction",
-               description = "Whether to perform SMILE correction.")
+               label = "Perform Smile-effect correction",
+               description = "Whether to perform Smile-effect correction.")
     private boolean doSmileCorrection;
 
     @Parameter(defaultValue = "true", label = "Output TOSA reflectance",
-               description = "Toggles the output of TOSA reflectance.")
+               description = "Toggles the output of Top of Standard Atmosphere reflectance.")
     private boolean outputTosa;
 
     @Parameter(defaultValue = "false",
-               label = "Output normalization of bidirectional reflectances",
+               label = "Output normalised bidirectional reflectances",
                description = "Toggles the output of normalised reflectances.")
     private boolean outputNormReflec;
 
     @Parameter(defaultValue = "true", label = "Output water leaving reflectance",
-               description = "Toggles the output of water leaving irradiance reflectance.")
+               description = "Toggles the output of water leaving reflectance.")
     private boolean outputReflec;
+
+    @Parameter(defaultValue = "RADIANCE_REFLECTANCES", valueSet = {"RADIANCE_REFLECTANCES", "IRRADIANCE_REFLECTANCES"},
+               label = "Output water leaving reflectance as",
+               description = "Select if reflectances shall be written as radiances or irradiances. " +
+                             "The irradiances are compatible with standard MERIS product.")
+    private ReflectanceEnum outputReflecAs;
 
     @Parameter(defaultValue = "true", label = "Output path reflectance",
                description = "Toggles the output of water leaving path reflectance.")
@@ -340,11 +346,11 @@ public class GlintCorrectionOperator extends Operator {
             }
 
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
-                                                                       smileAuxData, normalizationNet);
+                                                                       smileAuxData, normalizationNet, outputReflecAs);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
                 aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
-                                                           normalizationNet);
+                                                           normalizationNet, outputReflecAs);
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
@@ -582,7 +588,13 @@ public class GlintCorrectionOperator extends Operator {
             groupList.add("tosa_reflec");
         }
         if (outputReflec) {
-            String descriptionPattern = "Water leaving radiance reflectance at {0} nm";
+            String reflecType;
+            if (ReflectanceEnum.RADIANCE_REFLECTANCES.equals(outputReflecAs)) {
+                reflecType = "radiance";
+            } else {
+                reflecType = "irradiance";
+            }
+            String descriptionPattern = "Water leaving " + reflecType + " reflectance at {0} nm";
             addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
             groupList.add("reflec");
         }
