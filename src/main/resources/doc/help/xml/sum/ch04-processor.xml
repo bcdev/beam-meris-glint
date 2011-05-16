@@ -69,14 +69,14 @@
         This tab pane consists of the following components:
         <itemizedlist mark='bullet'>
             <listitem>
-                'Perform normalization of bidirectional reflectances': This checkbox toggles the normalization of
-                bidirectional reflectances.
-            </listitem>
-            <listitem>
                 'Perform SMILE correction': This checkbox enables or disables the SMILE correction.
             </listitem>
             <listitem>
                 'Output TOSA reflectance': This checkbox toggles the output of TOSA reflectances.
+            </listitem>
+            <listitem>
+                'Output normalization of bidirectional reflectances': This checkbox toggles the output of normalised
+                bidirectional reflectances.
             </listitem>
             <listitem>
                 'Output water leaving reflectance': This checkbox toggles the output of water leaving

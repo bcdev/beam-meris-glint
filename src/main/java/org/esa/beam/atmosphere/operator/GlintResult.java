@@ -7,8 +7,10 @@ package org.esa.beam.atmosphere.operator;
  * @version $Revision: 2703 $ $Date: 2010-01-21 13:51:07 +0100 (Do, 21 Jan 2010) $
  */
 public class GlintResult {
+
     private double[] tosaReflec;
     private double[] reflec;
+    private double[] normReflec;
     private double[] path;
     private double[] trans;
     private double angstrom;
@@ -23,6 +25,7 @@ public class GlintResult {
     public GlintResult() {
         tosaReflec = new double[12];
         reflec = new double[12];
+        normReflec = new double[12];
         path = new double[12];
         trans = new double[12];
         angstrom = 0;
@@ -49,6 +52,14 @@ public class GlintResult {
 
     public double[] getReflec() {
         return reflec;
+    }
+
+    public void setNormReflec(double[] normReflec) {
+        this.normReflec = normReflec;
+    }
+
+    public double[] getNormReflec() {
+        return normReflec;
     }
 
     public void setPath(double[] path) {
@@ -130,6 +141,5 @@ public class GlintResult {
     public int getFlag() {
         return flag;
     }
-
 
 }

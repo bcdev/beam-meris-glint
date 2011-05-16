@@ -56,13 +56,13 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.2",
+                  version = "1.2.1",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.2-SNAPSHOT";
+    public static final String GLINT_CORRECTION_VERSION = "1.2.1";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
@@ -106,6 +106,13 @@ public class GlintCorrectionOperator extends Operator {
             "reflec_12", "reflec_13",
             null, null
     };
+    private static final String[] NORM_REFLEC_BAND_NAMES = {
+            "norm_refl_1", "norm_refl_2", "norm_refl_3", "norm_refl_4", "norm_refl_5",
+            "norm_refl_6", "norm_refl_7", "norm_refl_8", "norm_refl_9", "norm_refl_10",
+            null,
+            "norm_refl_12", "norm_refl_13",
+            null, null
+    };
     private static final String[] PATH_BAND_NAMES = {
             "path_1", "path_2", "path_3", "path_4", "path_5",
             "path_6", "path_7", "path_8", "path_9", "path_10",
@@ -134,11 +141,6 @@ public class GlintCorrectionOperator extends Operator {
     private Product targetProduct;
 
     @Parameter(defaultValue = "false",
-               label = "Perform normalization of bidirectional reflectances",
-               description = "Whether to perform normalization of bidirectional reflectances to nadir.")
-    private boolean doNormalization;
-
-    @Parameter(defaultValue = "false",
                label = "Perform SMILE correction",
                description = "Whether to perform SMILE correction.")
     private boolean doSmileCorrection;
@@ -146,6 +148,11 @@ public class GlintCorrectionOperator extends Operator {
     @Parameter(defaultValue = "true", label = "Output TOSA reflectance",
                description = "Toggles the output of TOSA reflectance.")
     private boolean outputTosa;
+
+    @Parameter(defaultValue = "false",
+               label = "Output normalization of bidirectional reflectances",
+               description = "Toggles the output of normalised reflectances.")
+    private boolean outputNormReflec;
 
     @Parameter(defaultValue = "true", label = "Output water leaving reflectance",
                description = "Toggles the output of water leaving irradiance reflectance.")
@@ -281,7 +288,7 @@ public class GlintCorrectionOperator extends Operator {
             InputStream neuralNetStream = getNeuralNetStream(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
             flintNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
-        if (doNormalization) {
+        if (outputNormReflec) {
             final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
@@ -328,7 +335,7 @@ public class GlintCorrectionOperator extends Operator {
             final Map<String, ProductData> targetSampleDataMap = getTargetSampleData(targetTiles);
 
             NNffbpAlphaTabFast normalizationNet = null;
-            if (doNormalization) {
+            if (outputNormReflec) {
                 normalizationNet = new NNffbpAlphaTabFast(normalizationNeuralNetString);
             }
 
@@ -443,6 +450,9 @@ public class GlintCorrectionOperator extends Operator {
         }
         if (outputReflec) {
             fillTargetSample(REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getReflec());
+        }
+        if (outputNormReflec) {
+            fillTargetSample(NORM_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getNormReflec());
         }
         if (outputPath) {
             fillTargetSample(PATH_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getPath());
@@ -572,14 +582,14 @@ public class GlintCorrectionOperator extends Operator {
             groupList.add("tosa_reflec");
         }
         if (outputReflec) {
-            String descriptionPattern;
-            if (doNormalization) {
-                descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
-            } else {
-                descriptionPattern = "Water leaving radiance reflectance at {0} nm";
-            }
+            String descriptionPattern = "Water leaving radiance reflectance at {0} nm";
             addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
             groupList.add("reflec");
+        }
+        if (outputNormReflec) {
+            String descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
+            addSpectralTargetBands(product, NORM_REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
+            groupList.add("norm_refl");
         }
         if (outputPath) {
             addSpectralTargetBands(product, PATH_BAND_NAMES, "Water leaving radiance reflectance path at {0} nm",

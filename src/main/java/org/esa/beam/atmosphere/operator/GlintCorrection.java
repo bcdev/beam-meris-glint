@@ -164,6 +164,8 @@ public class GlintCorrection {
                 reflec[i] *= Math.PI;
             }
         }
+        glintResult.setReflec(reflec);
+
         if (normalizationNet != null) {
             double[] normInNet = new double[15];
             normInNet[0] = tetaSunSurfDeg;
@@ -173,11 +175,12 @@ public class GlintCorrection {
                 normInNet[i + 3] = Math.log(reflec[i]);
             }
             final double[] normOutNet = normalizationNet.calc(normInNet);
+            final double[] normReflec = new double[reflec.length];
             for (int i = 0; i < 12; i++) {
-                reflec[i] = Math.exp(normOutNet[i]);
+                normReflec[i] = Math.exp(normOutNet[i]);
             }
+            glintResult.setNormReflec(normReflec);
         }
-        glintResult.setReflec(reflec);
 
         /* compute angstrom coefficient from band 12 and 13 778 and 865 nm */
         double ang_443_865 = -Math.log(atmoOutnet[36] / atmoOutnet[39]) / Math.log(

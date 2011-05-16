@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.2</version>
+    <version>1.2.1</version>
     <name>MERIS Glint Correction</name>
 
     <description>
@@ -30,6 +30,8 @@
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.2.1<br/>
+        - normalised reflectances can be written as additional output
         <p>Changes in version 1.2<br/>
         - added groups for spectral bands
         - added optional normalization of bidirectional reflectances to nadir
