@@ -56,13 +56,13 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.2.1",
+                  version = "1.2.2",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.2.1";
+    public static final String GLINT_CORRECTION_VERSION = "1.2.2";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
@@ -273,6 +273,13 @@ public class GlintCorrectionOperator extends Operator {
         ProductUtils.copyMetadata(merisProduct, outputProduct);
         ProductUtils.copyTiePointGrids(merisProduct, outputProduct);
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
+        // copy altitude band if it exists and 'beam.envisat.usePixelGeoCoding' is set to true
+        if (Boolean.getBoolean("beam.envisat.usePixelGeoCoding") &&
+            merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
+            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME);
+        }
+
+        setTargetProduct(outputProduct);
 
         addTargetBands(outputProduct);
 
@@ -318,17 +325,9 @@ public class GlintCorrectionOperator extends Operator {
 
         // copy detector index band
         if (merisProduct.containsBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME)) {
-            Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct,
-                                                    outputProduct);
-            targetBand.setSourceImage(
-                    merisProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME).getSourceImage());
+            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         }
         setTargetProduct(outputProduct);
-    }
-
-    private static boolean isProductMerisFullResoultion(final Product product) {
-        final String productType = product.getProductType();
-        return productType.contains("FR") || productType.contains("FSG");
     }
 
 
@@ -386,6 +385,18 @@ public class GlintCorrectionOperator extends Operator {
             pm.done();
         }
 
+    }
+
+    private void copyBandWithImage(Product outputProduct, String bandName) {
+        Band targetBand = ProductUtils.copyBand(bandName,
+                                                merisProduct, outputProduct);
+        Band sourceBand = merisProduct.getBand(bandName);
+        targetBand.setSourceImage(sourceBand.getSourceImage());
+    }
+
+    private static boolean isProductMerisFullResoultion(final Product product) {
+        final String productType = product.getProductType();
+        return productType.contains("FR") || productType.contains("FSG");
     }
 
     private double getFlintValue(int pixelX, int pixelY) {

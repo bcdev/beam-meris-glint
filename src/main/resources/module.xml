@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <name>MERIS Glint Correction</name>
 
     <description>
@@ -30,6 +30,8 @@
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.2.2<br/>
+        - Altitude band is not copied for MER_FSG products if 'beam.envisat.usePixelGeoCoding' is set to true
         <p>Changes in version 1.2.1<br/>
         - reflectances acn be written as radiance reflectances or irradiance reflectances
         - normalised reflectances can be written as additional output
