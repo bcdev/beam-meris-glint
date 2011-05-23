@@ -388,8 +388,7 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private void copyBandWithImage(Product outputProduct, String bandName) {
-        Band targetBand = ProductUtils.copyBand(bandName,
-                                                merisProduct, outputProduct);
+        Band targetBand = ProductUtils.copyBand(bandName, merisProduct, outputProduct);
         Band sourceBand = merisProduct.getBand(bandName);
         targetBand.setSourceImage(sourceBand.getSourceImage());
     }
