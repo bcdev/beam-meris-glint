@@ -40,6 +40,7 @@ public class GlintCorrection {
     private final NNffbpAlphaTabFast atmosphereNet;
     private final SmileCorrectionAuxdata smileAuxdata;
     private NNffbpAlphaTabFast normalizationNet;
+    private NNffbpAlphaTabFast autoAssocNet;
     private ReflectanceEnum outputReflecAs;
 
 
@@ -50,10 +51,12 @@ public class GlintCorrection {
      * @param outputReflecAs
      */
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
-                           NNffbpAlphaTabFast normalizationNet, ReflectanceEnum outputReflecAs) {
+                           NNffbpAlphaTabFast normalizationNet, NNffbpAlphaTabFast autoAssocNet,
+                           ReflectanceEnum outputReflecAs) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
         this.normalizationNet = normalizationNet;
+        this.autoAssocNet = autoAssocNet;
         this.outputReflecAs = outputReflecAs;
     }
 
@@ -145,6 +148,16 @@ public class GlintCorrection {
             atmoInnet[atmoInnet.length - 1] = pixel.flintValue;
         }
 
+        // atmoInnet can also be used for aaNN
+        double chi_sum = computeError(rlTosa, atmoInnet);
+        glintResult.setReflecError(Math.exp(chi_sum));
+        // todo - raise a flag
+//        water->chi_sum_rltosa=chi_sum;
+//        if(chi_sum > THRESH_RL_TOSA_OOS) {
+//            *c2r_megs_flag |=  PCD_16; /* RL_tosa is out of scope of the nn, OR with pcd_16 */
+//        }
+
+
         double[] atmoOutnet = atmosphereNet.calc(atmoInnet);
 
         for (int i = 0; i < 12; i++) {
@@ -176,6 +189,25 @@ public class GlintCorrection {
         glintResult.setReflec(reflec);
 
         if (normalizationNet != null) {
+            // TODO - How to handle this?
+            // it is the same as for not normalized
+            double[] normAannInnet = new double[16];
+            normAannInnet[0] = tetaSunSurfDeg;
+            // calculate xyz coordinates
+            normAannInnet[1] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
+            normAannInnet[2] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
+            normAannInnet[3] = cosTetaViewSurfRad;
+            for (int i = 0; i < 12; i++) {
+                normAannInnet[i + 4] = Math.log(rlTosa[i]);
+            }
+
+            double chi_sumNorm = computeError(rlTosa, normAannInnet);
+            glintResult.setNormReflecError(Math.exp(chi_sumNorm));
+            // todo - raise a flag
+//        water->chi_sum_rltosa=chi_sum;
+//        if(chi_sum > THRESH_RL_TOSA_OOS) {
+//            *c2r_megs_flag |=  PCD_16; /* RL_tosa is out of scope of the nn, OR with pcd_16 */
+//        }
             double[] normInNet = new double[15];
             normInNet[0] = tetaSunSurfDeg;
             normInNet[1] = tetaViewSurfDeg;
@@ -219,6 +251,15 @@ public class GlintCorrection {
 
 
         return glintResult;
+    }
+
+    private double computeError(double[] rlTosa, double[] atmoInnet) {
+        double[] aaNNOutnet = autoAssocNet.calc(atmoInnet);
+        double chi_sum = 0.0;
+        for (int i = 0; i < rlTosa.length; i++) {
+            chi_sum += Math.pow(((Math.log(rlTosa[i]) - aaNNOutnet[i]) / Math.log(rlTosa[i])), 2.0); //RD20110116
+        }
+        return Math.sqrt(chi_sum / rlTosa.length);
     }
 
     /**

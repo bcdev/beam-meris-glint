@@ -10,7 +10,9 @@ public class GlintResult {
 
     private double[] tosaReflec;
     private double[] reflec;
+    private double reflecError;
     private double[] normReflec;
+    private double normReflecError;
     private double[] path;
     private double[] trans;
     private double angstrom;
@@ -25,7 +27,9 @@ public class GlintResult {
     public GlintResult() {
         tosaReflec = new double[12];
         reflec = new double[12];
+        reflecError = 0;
         normReflec = new double[12];
+        normReflecError = 0;
         path = new double[12];
         trans = new double[12];
         angstrom = 0;
@@ -54,6 +58,14 @@ public class GlintResult {
         return reflec;
     }
 
+    public void setReflecError(double error) {
+        reflecError = error;
+    }
+
+    public double getReflecError() {
+        return reflecError;
+    }
+
     public void setNormReflec(double[] normReflec) {
         this.normReflec = normReflec;
     }
@@ -61,6 +73,15 @@ public class GlintResult {
     public double[] getNormReflec() {
         return normReflec;
     }
+
+    public void setNormReflecError(double error) {
+        normReflecError = error;
+    }
+
+    public double getNormReflecError() {
+        return normReflecError;
+    }
+
 
     public void setPath(double[] path) {
         this.path = path;

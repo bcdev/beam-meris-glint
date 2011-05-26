@@ -70,7 +70,7 @@ public class GlintCorrectionOperator extends Operator {
     private static final String MERIS_ATMOSPHERIC_NET_NAME = "20x25x45_55990.1.net";
     private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
     private static final String NORMALIZATION_NET_NAME = "90_2.8.net";
-
+    private static final String ATMO_AANN_NET = "atmo_aann/12x5x12_318.4.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
@@ -99,6 +99,7 @@ public class GlintCorrectionOperator extends Operator {
             "tosa_reflec_12", "tosa_reflec_13",
             null, null
     };
+    private static final String REFLEC_ERROR_BAND_NAME = "reflec_error";
     private static final String[] REFLEC_BAND_NAMES = {
             "reflec_1", "reflec_2", "reflec_3", "reflec_4", "reflec_5",
             "reflec_6", "reflec_7", "reflec_8", "reflec_9", "reflec_10",
@@ -106,6 +107,7 @@ public class GlintCorrectionOperator extends Operator {
             "reflec_12", "reflec_13",
             null, null
     };
+    private static final String NORM_REFLEC_ERROR_BAND_NAME = "norm_refl_error";
     private static final String[] NORM_REFLEC_BAND_NAMES = {
             "norm_refl_1", "norm_refl_2", "norm_refl_3", "norm_refl_4", "norm_refl_5",
             "norm_refl_6", "norm_refl_7", "norm_refl_8", "norm_refl_9", "norm_refl_10",
@@ -211,6 +213,7 @@ public class GlintCorrectionOperator extends Operator {
     private String merisNeuralNetString;
     private String flintNeuralNetString;
     private String normalizationNeuralNetString;
+    private String atmoAaNeuralNetString;
     private SmileCorrectionAuxdata smileAuxData;
     private RasterDataNode l1FlagsNode;
     private RasterDataNode solzenNode;
@@ -305,6 +308,8 @@ public class GlintCorrectionOperator extends Operator {
             final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
+        final InputStream neuralNetStream = getClass().getResourceAsStream(ATMO_AANN_NET);
+        atmoAaNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         if (doSmileCorrection) {
             try {
                 smileAuxData = SmileCorrectionAuxdata.loadAuxdata(merisProduct.getProductType());
@@ -344,12 +349,15 @@ public class GlintCorrectionOperator extends Operator {
                 normalizationNet = new NNffbpAlphaTabFast(normalizationNeuralNetString);
             }
 
+            NNffbpAlphaTabFast autoAssocNet = new NNffbpAlphaTabFast(atmoAaNeuralNetString);
+
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
-                                                                       smileAuxData, normalizationNet, outputReflecAs);
+                                                                       smileAuxData, normalizationNet, autoAssocNet,
+                                                                       outputReflecAs);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
                 aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
-                                                           normalizationNet, outputReflecAs);
+                                                           normalizationNet, autoAssocNet, outputReflecAs);
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
@@ -466,9 +474,13 @@ public class GlintCorrectionOperator extends Operator {
         }
         if (outputReflec) {
             fillTargetSample(REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getReflec());
+            final ProductData reflecErrorTile = targetSampleData.get(REFLEC_ERROR_BAND_NAME);
+            reflecErrorTile.setElemDoubleAt(pixelIndex, glintResult.getReflecError());
         }
         if (outputNormReflec) {
             fillTargetSample(NORM_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getNormReflec());
+            final ProductData normReflecErrorTile = targetSampleData.get(NORM_REFLEC_ERROR_BAND_NAME);
+            normReflecErrorTile.setElemDoubleAt(pixelIndex, glintResult.getNormReflecError());
         }
         if (outputPath) {
             fillTargetSample(PATH_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getPath());
@@ -606,11 +618,19 @@ public class GlintCorrectionOperator extends Operator {
             }
             String descriptionPattern = "Water leaving " + reflecType + " reflectance at {0} nm";
             addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
+            Band reflecError = addNonSpectralTargetBand(product, "reflec_error",
+                                                        "Error of water leaving " + reflecType + " reflectance", "dl");
+            reflecError.setLog10Scaled(true);
             groupList.add("reflec");
+
         }
         if (outputNormReflec) {
             String descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
             addSpectralTargetBands(product, NORM_REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
+            Band normReflError = addNonSpectralTargetBand(product, "norm_refl_error",
+                                                          "Error of normalised water leaving radiance reflectance",
+                                                          "dl");
+            normReflError.setLog10Scaled(true);
             groupList.add("norm_refl");
         }
         if (outputPath) {
