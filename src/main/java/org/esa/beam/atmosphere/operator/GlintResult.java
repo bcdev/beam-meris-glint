@@ -10,9 +10,8 @@ public class GlintResult {
 
     private double[] tosaReflec;
     private double[] reflec;
-    private double reflecError;
+    private double tosaQualityIndicator;
     private double[] normReflec;
-    private double normReflecError;
     private double[] path;
     private double[] trans;
     private double angstrom;
@@ -23,13 +22,14 @@ public class GlintResult {
     private double btsm;
     private double atot;
     private int flag;
+    private double[] autoTosaReflec;
 
     public GlintResult() {
         tosaReflec = new double[12];
+        autoTosaReflec = new double[12];
         reflec = new double[12];
-        reflecError = 0;
+        tosaQualityIndicator = 0;
         normReflec = new double[12];
-        normReflecError = 0;
         path = new double[12];
         trans = new double[12];
         angstrom = 0;
@@ -50,6 +50,15 @@ public class GlintResult {
         return tosaReflec;
     }
 
+    public void setAutoTosaReflec(double[] autoTosaReflec) {
+        this.autoTosaReflec = autoTosaReflec;
+    }
+
+    public double[] getAutoTosaReflec() {
+        return this.autoTosaReflec;
+    }
+
+
     public void setReflec(double[] reflec) {
         this.reflec = reflec;
     }
@@ -58,12 +67,12 @@ public class GlintResult {
         return reflec;
     }
 
-    public void setReflecError(double error) {
-        reflecError = error;
+    public void setTosaQualityIndicator(double indicator) {
+        tosaQualityIndicator = indicator;
     }
 
-    public double getReflecError() {
-        return reflecError;
+    public double getTosaQualityIndicator() {
+        return tosaQualityIndicator;
     }
 
     public void setNormReflec(double[] normReflec) {
@@ -72,14 +81,6 @@ public class GlintResult {
 
     public double[] getNormReflec() {
         return normReflec;
-    }
-
-    public void setNormReflecError(double error) {
-        normReflecError = error;
-    }
-
-    public double getNormReflecError() {
-        return normReflecError;
     }
 
 

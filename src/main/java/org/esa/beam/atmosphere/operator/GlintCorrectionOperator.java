@@ -99,7 +99,15 @@ public class GlintCorrectionOperator extends Operator {
             "tosa_reflec_12", "tosa_reflec_13",
             null, null
     };
-    private static final String REFLEC_ERROR_BAND_NAME = "reflec_error";
+    private static final String[] AUTO_TOSA_REFLEC_BAND_NAMES = {
+            "tosa_reflec_auto_1", "tosa_reflec_auto_2", "tosa_reflec_auto_3", "tosa_reflec_auto_4",
+            "tosa_reflec_auto_5", "tosa_reflec_auto_6", "tosa_reflec_auto_7", "tosa_reflec_auto_8",
+            "tosa_reflec_auto_9", "tosa_reflec_auto_10",
+            null,
+            "tosa_reflec_auto_12", "tosa_reflec_auto_13",
+            null, null
+    };
+    private static final String TOSA_QUALITY_INDICATOR_BAND_NAME = "tosa_quality_indicator";
     private static final String[] REFLEC_BAND_NAMES = {
             "reflec_1", "reflec_2", "reflec_3", "reflec_4", "reflec_5",
             "reflec_6", "reflec_7", "reflec_8", "reflec_9", "reflec_10",
@@ -107,7 +115,6 @@ public class GlintCorrectionOperator extends Operator {
             "reflec_12", "reflec_13",
             null, null
     };
-    private static final String NORM_REFLEC_ERROR_BAND_NAME = "norm_refl_error";
     private static final String[] NORM_REFLEC_BAND_NAMES = {
             "norm_refl_1", "norm_refl_2", "norm_refl_3", "norm_refl_4", "norm_refl_5",
             "norm_refl_6", "norm_refl_7", "norm_refl_8", "norm_refl_9", "norm_refl_10",
@@ -150,6 +157,10 @@ public class GlintCorrectionOperator extends Operator {
     @Parameter(defaultValue = "true", label = "Output TOSA reflectance",
                description = "Toggles the output of Top of Standard Atmosphere reflectance.")
     private boolean outputTosa;
+
+    @Parameter(defaultValue = "false", label = "Output TOSA reflectance of auto assoc. neural net",
+               description = "Toggles the output of Top of Standard Atmosphere reflectance calculated by an auto associative neural net.")
+    private boolean outputAutoTosa;
 
     @Parameter(defaultValue = "false",
                label = "Output normalised bidirectional reflectances",
@@ -471,16 +482,18 @@ public class GlintCorrectionOperator extends Operator {
 
         if (outputTosa) {
             fillTargetSample(TOSA_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getTosaReflec());
+            final ProductData quality = targetSampleData.get(TOSA_QUALITY_INDICATOR_BAND_NAME);
+            quality.setElemDoubleAt(pixelIndex, glintResult.getTosaQualityIndicator());
+        }
+        if (outputAutoTosa) {
+            fillTargetSample(AUTO_TOSA_REFLEC_BAND_NAMES, pixelIndex, targetSampleData,
+                             glintResult.getAutoTosaReflec());
         }
         if (outputReflec) {
             fillTargetSample(REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getReflec());
-            final ProductData reflecErrorTile = targetSampleData.get(REFLEC_ERROR_BAND_NAME);
-            reflecErrorTile.setElemDoubleAt(pixelIndex, glintResult.getReflecError());
         }
         if (outputNormReflec) {
             fillTargetSample(NORM_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getNormReflec());
-            final ProductData normReflecErrorTile = targetSampleData.get(NORM_REFLEC_ERROR_BAND_NAME);
-            normReflecErrorTile.setElemDoubleAt(pixelIndex, glintResult.getNormReflecError());
         }
         if (outputPath) {
             fillTargetSample(PATH_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getPath());
@@ -605,9 +618,18 @@ public class GlintCorrectionOperator extends Operator {
 
     private void addTargetBands(Product product) {
         final List<String> groupList = new ArrayList<String>();
+        if (outputAutoTosa) {
+            groupList.add("tosa_reflec_auto");
+        }
         if (outputTosa) {
             addSpectralTargetBands(product, TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
             groupList.add("tosa_reflec");
+            addNonSpectralTargetBand(product, TOSA_QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
+                                     "dl");
+
+        }
+        if (outputAutoTosa) {
+            addSpectralTargetBands(product, AUTO_TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
         }
         if (outputReflec) {
             String reflecType;
@@ -618,19 +640,12 @@ public class GlintCorrectionOperator extends Operator {
             }
             String descriptionPattern = "Water leaving " + reflecType + " reflectance at {0} nm";
             addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
-            Band reflecError = addNonSpectralTargetBand(product, "reflec_error",
-                                                        "Error of water leaving " + reflecType + " reflectance", "dl");
-            reflecError.setLog10Scaled(true);
             groupList.add("reflec");
 
         }
         if (outputNormReflec) {
             String descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
             addSpectralTargetBands(product, NORM_REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
-            Band normReflError = addNonSpectralTargetBand(product, "norm_refl_error",
-                                                          "Error of normalised water leaving radiance reflectance",
-                                                          "dl");
-            normReflError.setLog10Scaled(true);
             groupList.add("norm_refl");
         }
         if (outputPath) {
