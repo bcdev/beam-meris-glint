@@ -16,7 +16,7 @@
 
             <ul>
                 <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_agc_atbd.pdf">Glint Correction with MERIS (ATBD 1)</a></li>
-                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_agc_atbd.pdf">Glint Correction with MERIS and AATSR (ATBD 2)</a></li>
+                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_flint_atbd.pdf">Glint Correction with MERIS and AATSR (ATBD 2)</a></li>
                 <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_sum.pdf">Software User Manual (SUM)</a></li>
             </ul>
     ]]>
@@ -33,7 +33,7 @@
         <p>Changes in version 1.2.2<br/>
         - Altitude band is not copied for MER_FSG products if 'beam.envisat.usePixelGeoCoding' is set to true
         <p>Changes in version 1.2.1<br/>
-        - reflectances acn be written as radiance reflectances or irradiance reflectances
+        - reflectances can be written as radiance reflectances or irradiance reflectances
         - normalised reflectances can be written as additional output
         <p>Changes in version 1.2<br/>
         - added groups for spectral bands
