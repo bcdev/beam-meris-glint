@@ -56,21 +56,21 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.2.2",
+                  version = "1.3-CC",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.2.2";
+    public static final String GLINT_CORRECTION_VERSION = "1.3-CC";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
-    private static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/20x25x45_55990.1.net";
-    private static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
-    private static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
-    private static final String ATMO_AANN_NET = "atmo_aann/12x5x12_318.4.net";
+    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/23x25x45_42632.7.net";
+    public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
+    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
+    public static final String ATMO_AANN_NET = "atmo_aann/12x5x12_161.3.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
@@ -202,11 +202,24 @@ public class GlintCorrectionOperator extends Operator {
                notEmpty = true, notNull = true)
     private String cloudIceExpression;
 
+    @Parameter(label = "Average salinity", defaultValue = "35", unit = "PSU", description = "The salinity of the water")
+    private double averageSalinity;
+
+    @Parameter(label = "Average temperature", defaultValue = "15", unit = "°C", description = "The Water temperature")
+    private double averageTemperature;
+
+
     @Parameter(label = "MERIS net (full path required for other than default)",
                defaultValue = MERIS_ATMOSPHERIC_NET_NAME,
                description = "The file of the atmospheric net to be used instead of the default neural net.",
                notNull = false)
     private File atmoNetMerisFile;
+
+    @Parameter(label = "Autoassociatve net (full path required for other than default)",
+               defaultValue = ATMO_AANN_NET,
+               description = "The file of the autoassociative net used for error computed instead of the default neural net.",
+               notNull = false)
+    private File autoassociativeNetFile;
 
     @Parameter(defaultValue = "false", label = "Use FLINT value in neural net (requires AATSR L1b source product)",
                description = "Toggles the usage of a FLINT value in neural net.")
@@ -319,7 +332,7 @@ public class GlintCorrectionOperator extends Operator {
             final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
-        final InputStream neuralNetStream = getClass().getResourceAsStream(ATMO_AANN_NET);
+        final InputStream neuralNetStream = getNeuralNetStream(ATMO_AANN_NET, autoassociativeNetFile);
         atmoAaNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         if (doSmileCorrection) {
             try {
@@ -363,12 +376,15 @@ public class GlintCorrectionOperator extends Operator {
             NNffbpAlphaTabFast autoAssocNet = new NNffbpAlphaTabFast(atmoAaNeuralNetString);
 
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
-                                                                       smileAuxData, normalizationNet, autoAssocNet,
-                                                                       outputReflecAs);
+                                                                       smileAuxData, averageTemperature,
+                                                                       averageSalinity,
+                                                                       normalizationNet, autoAssocNet, outputReflecAs);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
                 aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
-                                                           normalizationNet, autoAssocNet, outputReflecAs);
+                                                           averageTemperature, averageSalinity,
+                                                           normalizationNet, autoAssocNet, outputReflecAs
+                );
             }
 
             for (int y = 0; y < targetRectangle.getHeight(); y++) {
@@ -729,7 +745,7 @@ public class GlintCorrectionOperator extends Operator {
 
     private InputStream getNeuralNetStream(String resourceNetName, File neuralNetFile) {
         InputStream neuralNetStream;
-        if (neuralNetFile.getName().equals(resourceNetName)) {
+        if (neuralNetFile.equals((new File(resourceNetName)))) {
             neuralNetStream = getClass().getResourceAsStream(resourceNetName);
         } else {
             try {

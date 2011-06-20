@@ -4,8 +4,6 @@ import org.esa.beam.atmosphere.operator.GlintCorrectionOperator;
 import org.esa.beam.framework.ui.command.CommandEvent;
 import org.esa.beam.visat.actions.AbstractVisatAction;
 
-import java.awt.Dimension;
-
 /**
  * GLINT Action class
  *
@@ -21,7 +19,6 @@ public class GlintAction extends AbstractVisatAction {
         final GlintDialog productDialog = new GlintDialog(
                 "Meris.GlintCorrection", getAppContext(),
                 "MERIS/AATSR Glint Correction (AGC/FLINT) - v" + version, helpId);
-        productDialog.getJDialog().setPreferredSize(new Dimension(600, 550));
         productDialog.show();
     }
 

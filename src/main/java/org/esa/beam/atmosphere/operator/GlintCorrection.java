@@ -39,6 +39,8 @@ public class GlintCorrection {
 
     private final NNffbpAlphaTabFast atmosphereNet;
     private final SmileCorrectionAuxdata smileAuxdata;
+    private double waterTemperature;
+    private double waterSalinity;
     private NNffbpAlphaTabFast normalizationNet;
     private NNffbpAlphaTabFast autoAssocNet;
     private ReflectanceEnum outputReflecAs;
@@ -47,14 +49,19 @@ public class GlintCorrection {
     /**
      * @param atmosphereNet    the neural net for atmospheric correction
      * @param smileAuxdata     can be {@code null} if SMILE correction shall not be performed
+     * @param waterTemperature the temperature of the water
+     * @param waterSalinity    the water salinity
      * @param normalizationNet can be {@code null} if normalization shall not be performed
-     * @param outputReflecAs
+     * @param outputReflecAs   output as radiance or irradiance reflectances
      */
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
-                           NNffbpAlphaTabFast normalizationNet, NNffbpAlphaTabFast autoAssocNet,
+                           double waterTemperature, double waterSalinity, NNffbpAlphaTabFast normalizationNet,
+                           NNffbpAlphaTabFast autoAssocNet,
                            ReflectanceEnum outputReflecAs) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
+        this.waterTemperature = waterTemperature;
+        this.waterSalinity = waterSalinity;
         this.normalizationNet = normalizationNet;
         this.autoAssocNet = autoAssocNet;
         this.outputReflecAs = outputReflecAs;
@@ -140,8 +147,10 @@ public class GlintCorrection {
         atmoInnet[1] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
         atmoInnet[2] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
         atmoInnet[3] = cosTetaViewSurfRad;
+        atmoInnet[4] = waterTemperature;
+        atmoInnet[5] = waterSalinity;
         for (int i = 0; i < rlTosa.length; i++) {
-            atmoInnet[i + 4] = Math.log(rlTosa[i]);
+            atmoInnet[i + 6] = Math.log(rlTosa[i]);
         }
         // last input is log_rlglint_13 in synergyMode
         if (isFlintValueValid(pixel.flintValue)) {

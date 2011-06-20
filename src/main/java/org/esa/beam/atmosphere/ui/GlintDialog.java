@@ -170,7 +170,7 @@ public class GlintDialog extends SingleTargetProductDialog {
                                                                                        propertyContainer,
                                                                                        parameterMap,
                                                                                        null);
-        OperatorMenu menuSupport = new OperatorMenu(this.getJDialog(), operatorSpi.getOperatorClass(),
+        OperatorMenu menuSupport = new OperatorMenu(getJDialog(), operatorSpi.getOperatorClass(),
                                                     parameterSupport, helpID);
         getJDialog().setJMenuBar(menuSupport.createDefaultMenu());
     }
