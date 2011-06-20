@@ -67,9 +67,9 @@ public class GlintCorrectionOperator extends Operator {
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
-    private static final String MERIS_ATMOSPHERIC_NET_NAME = "20x25x45_55990.1.net";
-    private static final String FLINT_ATMOSPHERIC_NET_NAME = "25x30x40_6936.3.net";
-    private static final String NORMALIZATION_NET_NAME = "90_2.8.net";
+    private static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/20x25x45_55990.1.net";
+    private static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
+    private static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
     private static final String ATMO_AANN_NET = "atmo_aann/12x5x12_318.4.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
