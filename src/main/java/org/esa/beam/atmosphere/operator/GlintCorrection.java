@@ -121,8 +121,9 @@ public class GlintCorrection {
         final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad, aziDiffSurfRad);
         glintResult.setTosaReflec(rlTosa.clone());
 
+        boolean isFlintMode = isFlintValueValid(pixel.flintValue);
         /* test if tosa reflectances are out of training range */
-        if (!isTosaReflectanceValid(rlTosa, atmosphereNet)) {
+        if (!isTosaReflectanceValid(rlTosa, atmosphereNet, isFlintMode)) {
             glintResult.raiseFlag(TOSA_OOR);
         }
         if (tetaSunSurfDeg > atmosphereNet.getInmax()[0] || tetaSunSurfDeg < atmosphereNet.getInmin()[0]) {
@@ -148,7 +149,7 @@ public class GlintCorrection {
         atmoNetInput[atmoNetInputIndex++] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
         atmoNetInput[atmoNetInputIndex++] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
         atmoNetInput[atmoNetInputIndex++] = cosTetaViewSurfRad;
-        if (!isFlintValueValid(pixel.flintValue)) {
+        if (!isFlintMode) {
             atmoNetInput[atmoNetInputIndex++] = waterTemperature;
             atmoNetInput[atmoNetInputIndex++] = waterSalinity;
         }
@@ -156,13 +157,14 @@ public class GlintCorrection {
             atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i]);
         }
         // last input is log_rlglint_13 in synergyMode
-        if (isFlintValueValid(pixel.flintValue)) {
+        if (isFlintMode) {
             atmoNetInput[atmoNetInput.length - 1] = pixel.flintValue;
         }
 
-
         // atmoNetInput can also be used for aaNN
-        computeError(rlTosa, atmoNetInput, glintResult);
+        if (!isFlintMode) {
+            computeError(rlTosa, atmoNetInput, glintResult);
+        }
 
 
         double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
@@ -242,8 +244,8 @@ public class GlintCorrection {
         return glintResult;
     }
 
-    private void computeError(double[] rlTosa, double[] atmoInnet, GlintResult glintResult) {
-        double[] aaNNOutnet = autoAssocNet.calc(atmoInnet);
+    private void computeError(double[] rlTosa, double[] autoAssocNetInput, GlintResult glintResult) {
+        double[] aaNNOutnet = autoAssocNet.calc(autoAssocNetInput);
         double[] autoRlTosa = aaNNOutnet.clone();
         for (int i = 0; i < autoRlTosa.length; i++) {
             autoRlTosa[i] = Math.exp(autoRlTosa[i]);
@@ -295,10 +297,14 @@ public class GlintCorrection {
      **  with band_nu 17/3/05 R.D.
     --------------------------------------------------------------------------*/
 
-    private static boolean isTosaReflectanceValid(double[] tosaRefl, NNffbpAlphaTabFast atmosphereNet) {
+    private static boolean isTosaReflectanceValid(double[] tosaRefl, NNffbpAlphaTabFast atmosphereNet,
+                                                  boolean isFlintMode) {
+        int tosaOffset = isFlintMode ? 4 : 6;
+        double[] inmax = atmosphereNet.getInmax();
+        double[] inmin = atmosphereNet.getInmin();
         for (int i = 0; i < tosaRefl.length; i++) {
             double currentRlTosa = Math.log(tosaRefl[i]);
-            if (currentRlTosa > atmosphereNet.getInmax()[i + 4] || currentRlTosa < atmosphereNet.getInmin()[i + 4]) {
+            if (currentRlTosa > inmax[i + tosaOffset] || currentRlTosa < inmin[i + tosaOffset]) {
                 return false;
             }
         }
