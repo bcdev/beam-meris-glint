@@ -141,39 +141,44 @@ public class GlintCorrection {
         double trans708 = H2O_COR_POLY[0] + H2O_COR_POLY[1] * x2 + H2O_COR_POLY[2] * x2 * x2 + H2O_COR_POLY[3] * x2 * x2 * x2;
         rlTosa[8] /= trans708;
 
-        double[] atmoInnet = new double[atmosphereNet.getInmin().length];
-        atmoInnet[0] = tetaSunSurfDeg;   // replace by tetaSunDeg
+        double[] atmoNetInput = new double[atmosphereNet.getInmin().length];
+        int atmoNetInputIndex = 0;
+        atmoNetInput[atmoNetInputIndex++] = tetaSunSurfDeg;   // replace by tetaSunDeg
         // calculate xyz coordinates
-        atmoInnet[1] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
-        atmoInnet[2] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
-        atmoInnet[3] = cosTetaViewSurfRad;
-        atmoInnet[4] = waterTemperature;
-        atmoInnet[5] = waterSalinity;
+        atmoNetInput[atmoNetInputIndex++] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
+        atmoNetInput[atmoNetInputIndex++] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
+        atmoNetInput[atmoNetInputIndex++] = cosTetaViewSurfRad;
+        if (!isFlintValueValid(pixel.flintValue)) {
+            atmoNetInput[atmoNetInputIndex++] = waterTemperature;
+            atmoNetInput[atmoNetInputIndex++] = waterSalinity;
+        }
         for (int i = 0; i < rlTosa.length; i++) {
-            atmoInnet[i + 6] = Math.log(rlTosa[i]);
+            atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i]);
         }
         // last input is log_rlglint_13 in synergyMode
         if (isFlintValueValid(pixel.flintValue)) {
-            atmoInnet[atmoInnet.length - 1] = pixel.flintValue;
+            atmoNetInput[atmoNetInput.length - 1] = pixel.flintValue;
         }
 
-        // atmoInnet can also be used for aaNN
-        computeError(rlTosa, atmoInnet, glintResult);
+
+        // atmoNetInput can also be used for aaNN
+        computeError(rlTosa, atmoNetInput, glintResult);
 
 
-        double[] atmoOutnet = atmosphereNet.calc(atmoInnet);
+        double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
 
         for (int i = 0; i < 12; i++) {
-            atmoOutnet[i] = Math.exp(atmoOutnet[i]);
-            atmoOutnet[i + 12] = Math.exp(atmoOutnet[i + 12]);
-            atmoOutnet[i + 24] = Math.exp(atmoOutnet[i + 24]) / cosTetaSunSurfRad; //outnet is Ed_boa, not transmittance
+            atmoNetOutput[i] = Math.exp(atmoNetOutput[i]);
+            atmoNetOutput[i + 12] = Math.exp(atmoNetOutput[i + 12]);
+            atmoNetOutput[i + 24] = Math.exp(
+                    atmoNetOutput[i + 24]) / cosTetaSunSurfRad; //outnet is Ed_boa, not transmittance
         }
 
-        final double[] transds = Arrays.copyOfRange(atmoOutnet, 24, 36);
+        final double[] transds = Arrays.copyOfRange(atmoNetOutput, 24, 36);
         glintResult.setTrans(transds);
-        final double[] rwPaths = Arrays.copyOfRange(atmoOutnet, 12, 24);
+        final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
         glintResult.setPath(rwPaths);
-        final double[] reflec = Arrays.copyOfRange(atmoOutnet, 0, 12);
+        final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         double factor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
             factor = Math.PI; // irradiance reflectance, comparable with MERIS
@@ -208,29 +213,29 @@ public class GlintCorrection {
         }
 
         /* compute angstrom coefficient from band 12 and 13 778 and 865 nm */
-        double ang_443_865 = -Math.log(atmoOutnet[36] / atmoOutnet[39]) / Math.log(
+        double ang_443_865 = -Math.log(atmoNetOutput[36] / atmoNetOutput[39]) / Math.log(
                 MERIS_WAVELENGTHS[1] / MERIS_WAVELENGTHS[11]);
         glintResult.setAngstrom(ang_443_865);
-        glintResult.setTau550(atmoOutnet[37]);
-        glintResult.setTau778(atmoOutnet[38]);
-        glintResult.setTau865(atmoOutnet[39]);
-        if (!(atmoOutnet[37] <= atmosphereNet.getOutmax()[37] * MAX_TAU_FACTOR)) {
+        glintResult.setTau550(atmoNetOutput[37]);
+        glintResult.setTau778(atmoNetOutput[38]);
+        glintResult.setTau865(atmoNetOutput[39]);
+        if (!(atmoNetOutput[37] <= atmosphereNet.getOutmax()[37] * MAX_TAU_FACTOR)) {
             glintResult.raiseFlag(ATC_OOR);
         }
 
-        if (atmoOutnet.length == 43) {
+        if (atmoNetOutput.length == 43) {
             // glint ratio available as output only for 'non-flint' case (RD, 28.10.09)
-            glintResult.setGlintRatio(atmoOutnet[40]);
-            glintResult.setBtsm(Math.exp(atmoOutnet[41]));
-            glintResult.setAtot(Math.exp(atmoOutnet[42]));
+            glintResult.setGlintRatio(atmoNetOutput[40]);
+            glintResult.setBtsm(Math.exp(atmoNetOutput[41]));
+            glintResult.setAtot(Math.exp(atmoNetOutput[42]));
 
-            if (atmoOutnet[40] > atmosphereNet.getOutmax()[40] * 0.97) {
+            if (atmoNetOutput[40] > atmosphereNet.getOutmax()[40] * 0.97) {
                 glintResult.raiseFlag(SUNGLINT);
             }
         } else {
             glintResult.setGlintRatio(pixel.flintValue);    // test
-            glintResult.setBtsm(Math.exp(atmoOutnet[40]));
-            glintResult.setAtot(Math.exp(atmoOutnet[41]));
+            glintResult.setBtsm(Math.exp(atmoNetOutput[40]));
+            glintResult.setAtot(Math.exp(atmoNetOutput[41]));
         }
 
 
