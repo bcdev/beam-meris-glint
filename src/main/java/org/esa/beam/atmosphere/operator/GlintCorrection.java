@@ -337,17 +337,6 @@ public class GlintCorrection {
         double aziSunSurfRad = Math.toRadians(pixel.solazi);
         double aziDiffSurfRad = Math.acos(Math.cos(aziViewSurfRad - aziSunSurfRad));
         return Math.toDegrees(aziDiffSurfRad);
-
-
-//        double azi_diff_deg = Math.abs(pixel.solazi - pixel.satazi); /* azimuth difference */
-//
-//        /* reverse azi difference */
-//        azi_diff_deg = 180.0 - azi_diff_deg; /* different definitions in MERIS data and MC /HL simulation */
-//
-//        if (azi_diff_deg > 180.0) {
-//            azi_diff_deg = 360.0 - azi_diff_deg;
-//        }
-//        return azi_diff_deg;
     }
 
 
