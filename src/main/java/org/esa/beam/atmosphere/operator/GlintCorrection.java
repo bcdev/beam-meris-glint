@@ -119,6 +119,8 @@ public class GlintCorrection {
         Tosa tosa = new Tosa(smileAuxdata);
         tosa.init();
         final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad, aziDiffSurfRad);
+        // water vapour correction for band 9 (708 nm)
+        rlTosa[8] = correctRlTosa9forWaterVapour(pixel, rlTosa[8]);
         glintResult.setTosaReflec(rlTosa.clone());
 
         boolean isFlintMode = isFlintValueValid(pixel.flintValue);
@@ -135,20 +137,14 @@ public class GlintCorrection {
         }
 
 
-        // water vapour correction for band 9 (708 nm)
-        double rho_885 = pixel.toa_radiance[13] / pixel.solar_flux[13];
-        double rho_900 = pixel.toa_radiance[14] / pixel.solar_flux[14];
-        double x2 = rho_900 / rho_885;
-        double trans708 = H2O_COR_POLY[0] + H2O_COR_POLY[1] * x2 + H2O_COR_POLY[2] * x2 * x2 + H2O_COR_POLY[3] * x2 * x2 * x2;
-        rlTosa[8] /= trans708;
+        double[] xyz = computeXYZCoordinates(tetaViewSurfRad, aziDiffSurfRad);
 
-        double[] atmoNetInput = new double[atmosphereNet.getInmin().length];
         int atmoNetInputIndex = 0;
-        atmoNetInput[atmoNetInputIndex++] = tetaSunSurfDeg;   // replace by tetaSunDeg
-        // calculate xyz coordinates
-        atmoNetInput[atmoNetInputIndex++] = -Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
-        atmoNetInput[atmoNetInputIndex++] = Math.abs(-Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad));
-        atmoNetInput[atmoNetInputIndex++] = cosTetaViewSurfRad;
+        double[] atmoNetInput = new double[atmosphereNet.getInmin().length];
+        atmoNetInput[atmoNetInputIndex++] = tetaSunSurfDeg;
+        atmoNetInput[atmoNetInputIndex++] = xyz[0];
+        atmoNetInput[atmoNetInputIndex++] = xyz[1];
+        atmoNetInput[atmoNetInputIndex++] = xyz[2];
         if (!isFlintMode) {
             atmoNetInput[atmoNetInputIndex++] = waterTemperature;
             atmoNetInput[atmoNetInputIndex++] = waterSalinity;
@@ -244,6 +240,24 @@ public class GlintCorrection {
         return glintResult;
     }
 
+    private double correctRlTosa9forWaterVapour(PixelData pixel, double rlTosa9) {
+        double rho_885 = pixel.toa_radiance[13] / pixel.solar_flux[13];
+        double rho_900 = pixel.toa_radiance[14] / pixel.solar_flux[14];
+        double x2 = rho_900 / rho_885;
+        double trans708 = H2O_COR_POLY[0] + H2O_COR_POLY[1] * x2 + H2O_COR_POLY[2] * x2 * x2 + H2O_COR_POLY[3] * x2 * x2 * x2;
+        return rlTosa9 / trans708;
+    }
+
+    private double[] computeXYZCoordinates(double tetaViewSurfRad, double aziDiffSurfRad) {
+        double[] xyz = new double[3];
+        double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
+
+        xyz[0] = cosTetaViewSurfRad * Math.cos(aziDiffSurfRad);
+        xyz[1] = cosTetaViewSurfRad * Math.sin(aziDiffSurfRad);
+        xyz[2] = Math.sin(tetaViewSurfRad);
+        return xyz;
+    }
+
     private void computeError(double[] rlTosa, double[] autoAssocNetInput, GlintResult glintResult) {
         double[] aaNNOutnet = autoAssocNet.calc(autoAssocNetInput);
         double[] autoRlTosa = aaNNOutnet.clone();
@@ -319,15 +333,21 @@ public class GlintCorrection {
 
 
     private static double getAzimuthDifference(PixelData pixel) {
-        double azi_diff_deg = Math.abs(pixel.solazi - pixel.satazi); /* azimuth difference */
+        double aziViewSurfRad = Math.toRadians(pixel.satazi);
+        double aziSunSurfRad = Math.toRadians(pixel.solazi);
+        double aziDiffSurfRad = Math.acos(Math.cos(aziViewSurfRad - aziSunSurfRad));
+        return Math.toDegrees(aziDiffSurfRad);
 
-        /* reverse azi difference */
-        azi_diff_deg = 180.0 - azi_diff_deg; /* different definitions in MERIS data and MC /HL simulation */
 
-        if (azi_diff_deg > 180.0) {
-            azi_diff_deg = 360.0 - azi_diff_deg;
-        }
-        return azi_diff_deg;
+//        double azi_diff_deg = Math.abs(pixel.solazi - pixel.satazi); /* azimuth difference */
+//
+//        /* reverse azi difference */
+//        azi_diff_deg = 180.0 - azi_diff_deg; /* different definitions in MERIS data and MC /HL simulation */
+//
+//        if (azi_diff_deg > 180.0) {
+//            azi_diff_deg = 360.0 - azi_diff_deg;
+//        }
+//        return azi_diff_deg;
     }
 
 
