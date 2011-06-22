@@ -56,8 +56,7 @@ public class GlintCorrection {
      */
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
                            double waterTemperature, double waterSalinity, NNffbpAlphaTabFast normalizationNet,
-                           NNffbpAlphaTabFast autoAssocNet,
-                           ReflectanceEnum outputReflecAs) {
+                           NNffbpAlphaTabFast autoAssocNet, ReflectanceEnum outputReflecAs) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
         this.waterTemperature = waterTemperature;
@@ -177,19 +176,18 @@ public class GlintCorrection {
         final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
         glintResult.setPath(rwPaths);
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
-        double factor;
+        double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
-            factor = Math.PI; // irradiance reflectance, comparable with MERIS
+            radiance2IrradianceFactor = Math.PI; // irradiance reflectance, comparable with MERIS
         } else {
-            factor = 1.0; // radiance reflectance
+            radiance2IrradianceFactor = 1.0; // radiance reflectance
         }
         for (int i = 0; i < reflec.length; i++) {
             if (deriveRwFromPath) {
-                final double v = transds[i]; /*probably a bug: / cosTetaSunRad **/
-                double transu = Math.exp(Math.log(v) * (cosTetaSunSurfRad / cosTetaViewSurfRad));
-                reflec[i] = (rlTosa[i] - rwPaths[i]) / transu * factor;
+                reflec[i] = deriveReflecFromPath(rwPaths[i], transds[i], rlTosa[i], cosTetaViewSurfRad,
+                                                 cosTetaSunSurfRad, radiance2IrradianceFactor);
             } else {
-                reflec[i] *= factor;
+                reflec[i] *= radiance2IrradianceFactor;
             }
         }
         glintResult.setReflec(reflec);
@@ -238,6 +236,13 @@ public class GlintCorrection {
 
 
         return glintResult;
+    }
+
+    private double deriveReflecFromPath(double rwPath, double transd, double rlTosa, double cosTetaViewSurfRad,
+                                        double cosTetaSunSurfRad, double radiance2IrradianceFactor) {
+        double transu = Math.exp(
+                Math.log(transd) * (cosTetaSunSurfRad / cosTetaViewSurfRad)) * radiance2IrradianceFactor;
+        return (rlTosa - rwPath) / (transu * transd) * cosTetaSunSurfRad;
     }
 
     private double correctRlTosa9forWaterVapour(PixelData pixel, double rlTosa9) {
