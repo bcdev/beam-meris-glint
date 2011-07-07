@@ -66,13 +66,6 @@ public class GlintCorrection {
         this.outputReflecAs = outputReflecAs;
     }
 
-    protected double correctViewAngle(double teta_view_deg, int pixelX, int centerPixel, boolean isFullResolution) {
-        final double ang_coef_1 = -0.004793;
-        final double ang_coef_2 = isFullResolution ? 0.0093247 / 4 : 0.0093247;
-        teta_view_deg = teta_view_deg + Math.abs(pixelX - centerPixel) * ang_coef_2 + ang_coef_1;
-        return teta_view_deg;
-    }
-
     /**
      * This method performa the Glint correction.
      *
@@ -234,15 +227,27 @@ public class GlintCorrection {
             glintResult.setAtot(Math.exp(atmoNetOutput[41]));
         }
 
-
         return glintResult;
     }
 
-    private double deriveReflecFromPath(double rwPath, double transd, double rlTosa, double cosTetaViewSurfRad,
-                                        double cosTetaSunSurfRad, double radiance2IrradianceFactor) {
-        double transu = Math.exp(
-                Math.log(transd) * (cosTetaSunSurfRad / cosTetaViewSurfRad)) * radiance2IrradianceFactor;
-        return (rlTosa - rwPath) / (transu * transd) * cosTetaSunSurfRad;
+    public static double correctViewAngle(double teta_view_deg, int pixelX, int centerPixel, boolean isFullResolution) {
+        final double ang_coef_1 = -0.004793;
+        final double ang_coef_2 = isFullResolution ? 0.0093247 / 4 : 0.0093247;
+        teta_view_deg = teta_view_deg + Math.abs(pixelX - centerPixel) * ang_coef_2 + ang_coef_1;
+        return teta_view_deg;
+    }
+
+    public static double deriveReflecFromPath(double rwPath, double transd, double rlTosa, double cosTetaViewSurfRad,
+                                              double cosTetaSunSurfRad, double radiance2IrradianceFactor) {
+
+        double transu = Math.exp(Math.log(transd) * (cosTetaSunSurfRad / cosTetaViewSurfRad));
+        transu *= radiance2IrradianceFactor;
+        double edBoa = transd * cosTetaSunSurfRad;
+        return (rlTosa - rwPath) / (transu * edBoa) * cosTetaSunSurfRad;
+
+        // simplest solution but gives nearly the same results
+//        return (rlTosa - rwPath) / Math.pow(transd,2);
+
     }
 
     private double correctRlTosa9forWaterVapour(PixelData pixel, double rlTosa9) {
