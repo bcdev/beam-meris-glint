@@ -50,11 +50,12 @@ public class NNffbpAlphaTabFastTest extends TestCase {
 
     }
 
+    @SuppressWarnings({"CallToSystemGC"})
     public void testCalcJacobiPerformance() {
         final NNffbpAlphaTabFast tab = loadTestNet();
 
         final double[] nnInput = new double[]{1.0, 3.4, 6.988, 4.4, 7.0, 16.21};
-
+        System.gc(); // call gc in order to prevent garbage collection during performance test
         final long t1 = System.nanoTime();
         final int N = 100000;
         for (int i = 0; i < N; i++) {
@@ -68,16 +69,17 @@ public class NNffbpAlphaTabFastTest extends TestCase {
         final long t2 = System.nanoTime();
         final double duration = (t2 - t1) / 1.0e9;
         // using reference time in order to get rid of a constant time the duration is compared to
+        System.gc(); // call gc in order to prevent garbage collection during performance test
         final double refTime = getReferenceTime(N);
         assertTrue(duration < refTime);
     }
 
     private double getReferenceTime(int n) {
         final long t0 = System.nanoTime();
-        for (int i = 0; i < n*100; i++) { // Jacobi is less than 100 times slower
+        for (int i = 0; i < n * 100; i++) { // Jacobi is less than 100 times slower
             Math.acos(1.0e-5 * Math.random());
 
-       }
+        }
         final long t1 = System.nanoTime();
         return (t1 - t0) / 1.0e9;
     }
