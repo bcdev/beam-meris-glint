@@ -683,9 +683,12 @@ public class GlintCorrectionOperator extends Operator {
             }
         }
         product.setAutoGrouping(sb.toString());
-        addNonSpectralTargetBand(product, TAU_550, "Spectral aerosol optical depth at 550", "dl");
-        addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
-        addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
+        final Band tau550 = addNonSpectralTargetBand(product, TAU_550, "Spectral aerosol optical depth at 550", "dl");
+        tau550.setSpectralWavelength(550);
+        final Band tau778 = addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
+        tau778.setSpectralWavelength(778);
+        final Band tau865 = addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
+        tau865.setSpectralWavelength(865);
 
         if (flintProduct == null) {
             addNonSpectralTargetBand(product, GLINT_RATIO, "Glint ratio", "dl");
