@@ -144,8 +144,6 @@ public class GlintCorrectionOperator extends Operator {
                    optional = true)
     private Product aatsrProduct;
 
-    private Product flintProduct;
-
     @TargetProduct(description = "The atmospheric corrected output product.")
     private Product targetProduct;
 
@@ -251,6 +249,9 @@ public class GlintCorrectionOperator extends Operator {
     private Band[] spectralNodes;
     private int nadirColumnIndex;
     private boolean isFullResolution;
+    private Product flintProduct;
+    private Product collocateProduct;
+    private Product toaValidationProduct;
 
 
     @Override
@@ -266,8 +267,8 @@ public class GlintCorrectionOperator extends Operator {
             Map<String, Product> collocateInput = new HashMap<String, Product>(2);
             collocateInput.put("masterProduct", merisProduct);
             collocateInput.put("slaveProduct", aatsrProduct);
-            Product collocateProduct =
-                    GPF.createProduct(OperatorSpi.getOperatorAlias(CollocateOp.class), GPF.NO_PARAMS, collocateInput);
+            collocateProduct = GPF.createProduct(OperatorSpi.getOperatorAlias(CollocateOp.class), GPF.NO_PARAMS,
+                                                 collocateInput);
 
             // create FLINT product
             Map<String, Product> flintInput = new HashMap<String, Product>(1);
@@ -319,7 +320,8 @@ public class GlintCorrectionOperator extends Operator {
         final ToaReflectanceValidationOp validationOp = ToaReflectanceValidationOp.create(merisProduct,
                                                                                           landExpression,
                                                                                           cloudIceExpression);
-        validationBand = validationOp.getTargetProduct().getBandAt(0);
+        toaValidationProduct = validationOp.getTargetProduct();
+        validationBand = toaValidationProduct.getBandAt(0);
 
         InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
@@ -359,6 +361,23 @@ public class GlintCorrectionOperator extends Operator {
         setTargetProduct(outputProduct);
     }
 
+    @Override
+    public void dispose() {
+        if (flintProduct != null) {
+            flintProduct.dispose();
+            flintProduct = null;
+        }
+        if (collocateProduct != null) {
+            collocateProduct.dispose();
+            collocateProduct = null;
+        }
+        if (toaValidationProduct != null) {
+            toaValidationProduct.dispose();
+            toaValidationProduct = null;
+        }
+
+        super.dispose();
+    }
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws

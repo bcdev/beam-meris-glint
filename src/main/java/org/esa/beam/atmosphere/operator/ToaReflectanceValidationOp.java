@@ -60,6 +60,7 @@ public class ToaReflectanceValidationOp extends Operator {
     private Band landWaterBand;
     private Band cloudIceBand;
     private Band rlToaOorBand;
+    private Product reflProduct;
 
 
     public static ToaReflectanceValidationOp create(Product sourceProduct, String landExpression,
@@ -78,7 +79,7 @@ public class ToaReflectanceValidationOp extends Operator {
                                     String.format("%s_CLS", sourceProduct.getProductType()),
                                     sourceProduct.getSceneRasterWidth(),
                                     sourceProduct.getSceneRasterHeight());
-        final Product reflProduct = ToaReflectanceOp.create(sourceProduct).getTargetProduct();
+        reflProduct = ToaReflectanceOp.create(sourceProduct).getTargetProduct();
         for (String bandName : EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES) {
             final Band band = ProductUtils.copyBand(bandName, sourceProduct, reflProduct);
             band.setSourceImage(sourceProduct.getBand(bandName).getSourceImage());
@@ -104,6 +105,15 @@ public class ToaReflectanceValidationOp extends Operator {
         classBand.setNoDataValueUsed(true);
         classBand.setSampleCoding(flagCoding);
 
+    }
+
+    @Override
+    public void dispose() {
+        if (reflProduct != null) {
+            reflProduct.dispose();
+            reflProduct = null;
+        }
+        super.dispose();
     }
 
     @Override
