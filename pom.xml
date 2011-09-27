@@ -4,7 +4,7 @@
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-glint</artifactId>
     <packaging>jar</packaging>
-    <version>1.3-CC-SNAPSHOT</version>
+    <version>1.3-CC</version>
     <name>MERIS Glint Project</name>
 
     <pluginRepositories>
