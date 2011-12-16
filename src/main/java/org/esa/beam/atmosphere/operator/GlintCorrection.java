@@ -39,8 +39,6 @@ public class GlintCorrection {
 
     private final NNffbpAlphaTabFast atmosphereNet;
     private final SmileCorrectionAuxdata smileAuxdata;
-    private double waterTemperature;
-    private double waterSalinity;
     private NNffbpAlphaTabFast normalizationNet;
     private NNffbpAlphaTabFast autoAssocNet;
     private ReflectanceEnum outputReflecAs;
@@ -49,18 +47,14 @@ public class GlintCorrection {
     /**
      * @param atmosphereNet    the neural net for atmospheric correction
      * @param smileAuxdata     can be {@code null} if SMILE correction shall not be performed
-     * @param waterTemperature the temperature of the water
-     * @param waterSalinity    the water salinity
      * @param normalizationNet can be {@code null} if normalization shall not be performed
      * @param outputReflecAs   output as radiance or irradiance reflectances
      */
     public GlintCorrection(NNffbpAlphaTabFast atmosphereNet, SmileCorrectionAuxdata smileAuxdata,
-                           double waterTemperature, double waterSalinity, NNffbpAlphaTabFast normalizationNet,
+                           NNffbpAlphaTabFast normalizationNet,
                            NNffbpAlphaTabFast autoAssocNet, ReflectanceEnum outputReflecAs) {
         this.atmosphereNet = atmosphereNet;
         this.smileAuxdata = smileAuxdata;
-        this.waterTemperature = waterTemperature;
-        this.waterSalinity = waterSalinity;
         this.normalizationNet = normalizationNet;
         this.autoAssocNet = autoAssocNet;
         this.outputReflecAs = outputReflecAs;
@@ -69,12 +63,14 @@ public class GlintCorrection {
     /**
      * This method performa the Glint correction.
      *
-     * @param pixel            - the pixel input data
-     * @param deriveRwFromPath -
+     * @param pixel            the pixel input data
+     * @param deriveRwFromPath whether to derive the water leaving reflectance from path or not
+     * @param temperature      the water temperature
+     * @param salinity         the water salinity
      *
      * @return GlintResult
      */
-    public GlintResult perform(PixelData pixel, boolean deriveRwFromPath) {
+    public GlintResult perform(PixelData pixel, boolean deriveRwFromPath, double temperature, double salinity) {
 
         double tetaViewSurfDeg = pixel.satzen; /* viewing zenith angle */
         tetaViewSurfDeg = correctViewAngle(tetaViewSurfDeg, pixel.pixelX, pixel.nadirColumnIndex,
@@ -110,9 +106,7 @@ public class GlintCorrection {
 
         Tosa tosa = new Tosa(smileAuxdata);
         tosa.init();
-        final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad, aziDiffSurfRad);
-        // water vapour correction for band 9 (708 nm)
-        rlTosa[8] = correctRlTosa9forWaterVapour(pixel, rlTosa[8]);
+        final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad);
         glintResult.setTosaReflec(rlTosa.clone());
 
         boolean isFlintMode = isFlintValueValid(pixel.flintValue);
@@ -138,8 +132,8 @@ public class GlintCorrection {
         atmoNetInput[atmoNetInputIndex++] = xyz[1];
         atmoNetInput[atmoNetInputIndex++] = xyz[2];
         if (!isFlintMode) {
-            atmoNetInput[atmoNetInputIndex++] = waterTemperature;
-            atmoNetInput[atmoNetInputIndex++] = waterSalinity;
+            atmoNetInput[atmoNetInputIndex++] = temperature;
+            atmoNetInput[atmoNetInputIndex++] = salinity;
         }
         for (int i = 0; i < rlTosa.length; i++) {
             atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i]);

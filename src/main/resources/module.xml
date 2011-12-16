@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.3-CC</version>
+    <version>1.4-CC</version>
     <name>MERIS Glint Correction</name>
 
     <description>
@@ -30,6 +30,8 @@
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.4<br/>
+        - Integrate salinity and temperature maps
         <p>Changes in version 1.3<br/>
         - updated neural nets
         - added parameter for water salinity and temperature
@@ -59,14 +61,17 @@
         <module>beam-envisat-reader</module>
     </dependency>
     <dependency>
-        <module>beam-visat</module>
-        <optional>true</optional>
+        <module>beam-waterradiance-auxdata</module>
     </dependency>
     <dependency>
         <module>beam-meris-radiometry</module>
     </dependency>
     <dependency>
         <module>flint-processor</module>
+    </dependency>
+    <dependency>
+        <module>beam-visat-rcp</module>
+        <optional>true</optional>
     </dependency>
 
     <categories>Processor,MERIS</categories>

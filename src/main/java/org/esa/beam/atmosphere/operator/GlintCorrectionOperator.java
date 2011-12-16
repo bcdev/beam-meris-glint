@@ -6,6 +6,7 @@ import org.esa.beam.collocation.CollocateOp;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
+import org.esa.beam.framework.datamodel.GeoCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
 import org.esa.beam.framework.datamodel.Mask;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
@@ -27,6 +28,8 @@ import org.esa.beam.glint.operators.FlintOp;
 import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
 import org.esa.beam.util.ProductUtils;
+import org.esa.beam.waterradiance.AuxdataProvider;
+import org.esa.beam.waterradiance.AuxdataProviderFactory;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -41,6 +44,7 @@ import java.io.InputStreamReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -56,13 +60,13 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.3-CC",
+                  version = "1.4-CC",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.3-CC";
+    public static final String GLINT_CORRECTION_VERSION = "1.4-CC";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
@@ -200,9 +204,12 @@ public class GlintCorrectionOperator extends Operator {
                notEmpty = true, notNull = true)
     private String cloudIceExpression;
 
+    @Parameter(label = "Use climatology map for salinity and temperature", defaultValue = "true",
+               description = "By default a climatology map is used. If set to 'false' the specified average values are used " +
+                             "for the whole scene.")
+    private boolean useSnTMap;
     @Parameter(label = "Average salinity", defaultValue = "35", unit = "PSU", description = "The salinity of the water")
     private double averageSalinity;
-
     @Parameter(label = "Average temperature", defaultValue = "15", unit = "°C", description = "The Water temperature")
     private double averageTemperature;
 
@@ -249,6 +256,8 @@ public class GlintCorrectionOperator extends Operator {
     private Band[] spectralNodes;
     private int nadirColumnIndex;
     private boolean isFullResolution;
+    private Date date;
+    private AuxdataProvider snTProvider;
     private Product flintProduct;
     private Product collocateProduct;
     private Product toaValidationProduct;
@@ -346,6 +355,11 @@ public class GlintCorrectionOperator extends Operator {
         nadirColumnIndex = MerisFlightDirection.findNadirColumnIndex(merisProduct);
         isFullResolution = isProductMerisFullResoultion(merisProduct);
 
+        if (useSnTMap) {
+            snTProvider = createSnTProvider();
+            date = merisProduct.getStartTime().getAsDate();
+
+        }
         ProductUtils.copyFlagBands(merisProduct, outputProduct);
         for (Band srcBand : merisProduct.getBands()) {
             if (srcBand.getFlagCoding() != null) {
@@ -395,13 +409,11 @@ public class GlintCorrectionOperator extends Operator {
             NNffbpAlphaTabFast autoAssocNet = new NNffbpAlphaTabFast(atmoAaNeuralNetString);
 
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
-                                                                       smileAuxData, averageTemperature,
-                                                                       averageSalinity,
-                                                                       normalizationNet, autoAssocNet, outputReflecAs);
+                                                                       smileAuxData, normalizationNet, autoAssocNet,
+                                                                       outputReflecAs);
             GlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
                 aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
-                                                           averageTemperature, averageSalinity,
                                                            normalizationNet, autoAssocNet, outputReflecAs
                 );
             }
@@ -419,12 +431,24 @@ public class GlintCorrectionOperator extends Operator {
                     inputData.pixelX = pixelX;
                     inputData.pixelY = pixelY;
 
+                    double salinity;
+                    double temperature;
+                    if (snTProvider != null) {
+                        GeoCoding geoCoding = merisProduct.getGeoCoding();
+                        GeoPos geoPos = geoCoding.getGeoPos(new PixelPos(x + 0.5f, y + 0.5f), null);
+                        salinity = snTProvider.getSalinity(date, geoPos.getLat(), geoPos.getLon());
+                        temperature = snTProvider.getTemperature(date, geoPos.getLat(), geoPos.getLon());
+                    } else {
+                        salinity = averageSalinity;
+                        temperature = averageTemperature;
+                    }
+
                     GlintResult glintResult;
                     if (aatsrFlintCorrection != null && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
-                        glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath);
+                        glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     } else {
-                        glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath);
+                        glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
                     }
 
                     fillTargetSampleData(targetSampleDataMap, pixelIndex, inputData, glintResult);
@@ -433,12 +457,19 @@ public class GlintCorrectionOperator extends Operator {
             }
             commitSampleData(targetSampleDataMap, targetTiles);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new OperatorException(e);
         } finally {
             pm.done();
         }
 
+    }
+
+    private AuxdataProvider createSnTProvider() {
+        try {
+            return AuxdataProviderFactory.createDataProvider();
+        } catch (IOException ioe) {
+            throw new OperatorException("Not able to create provider for auxiliary data.", ioe);
+        }
     }
 
     private void copyBandWithImage(Product outputProduct, String bandName) {
