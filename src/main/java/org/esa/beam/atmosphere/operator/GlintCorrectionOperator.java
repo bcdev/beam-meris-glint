@@ -435,7 +435,7 @@ public class GlintCorrectionOperator extends Operator {
                     double temperature;
                     if (snTProvider != null) {
                         GeoCoding geoCoding = merisProduct.getGeoCoding();
-                        GeoPos geoPos = geoCoding.getGeoPos(new PixelPos(x + 0.5f, y + 0.5f), null);
+                        GeoPos geoPos = geoCoding.getGeoPos(new PixelPos(pixelX + 0.5f, pixelY + 0.5f), null);
                         salinity = snTProvider.getSalinity(date, geoPos.getLat(), geoPos.getLon());
                         temperature = snTProvider.getTemperature(date, geoPos.getLat(), geoPos.getLon());
                     } else {
