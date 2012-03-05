@@ -1,7 +1,6 @@
 package org.esa.beam.atmosphere.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.glevel.MultiLevelImage;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -78,22 +77,11 @@ public class ToaReflectanceOp extends Operator {
 
             bandMap.put(toaReflBand, radianceBand);
         }
-        ProductUtils.copyFlagBands(sourceProduct, targetProduct);
-        copyFlagSourceImages();
+        ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
 
         BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
 
-    }
-
-    private void copyFlagSourceImages() {
-        final Band[] bands = targetProduct.getBands();
-        for (Band band : bands) {
-            if (band.isFlagBand()) {
-                final MultiLevelImage sourceFlagImage = sourceProduct.getBand(band.getName()).getSourceImage();
-                band.setSourceImage(sourceFlagImage);
-            }
-        }
     }
 
     @Override

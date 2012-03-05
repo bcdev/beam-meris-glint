@@ -313,7 +313,8 @@ public class GlintCorrectionOperator extends Operator {
         // copy altitude band if it exists and 'beam.envisat.usePixelGeoCoding' is set to true
         if (Boolean.getBoolean("beam.envisat.usePixelGeoCoding") &&
             merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
-            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME);
+            Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME, merisProduct,
+                                                    outputProduct, true);
         }
 
         setTargetProduct(outputProduct);
@@ -360,17 +361,11 @@ public class GlintCorrectionOperator extends Operator {
             date = merisProduct.getStartTime().getAsDate();
 
         }
-        ProductUtils.copyFlagBands(merisProduct, outputProduct);
-        for (Band srcBand : merisProduct.getBands()) {
-            if (srcBand.getFlagCoding() != null) {
-                Band targetBand = outputProduct.getBand(srcBand.getName());
-                targetBand.setSourceImage(srcBand.getSourceImage());
-            }
-        }
+        ProductUtils.copyFlagBands(merisProduct, outputProduct, true);
 
         // copy detector index band
         if (merisProduct.containsBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME)) {
-            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
+            ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct, outputProduct, true);
         }
         setTargetProduct(outputProduct);
     }
@@ -470,12 +465,6 @@ public class GlintCorrectionOperator extends Operator {
         } catch (IOException ioe) {
             throw new OperatorException("Not able to create provider for auxiliary data.", ioe);
         }
-    }
-
-    private void copyBandWithImage(Product outputProduct, String bandName) {
-        Band targetBand = ProductUtils.copyBand(bandName, merisProduct, outputProduct);
-        Band sourceBand = merisProduct.getBand(bandName);
-        targetBand.setSourceImage(sourceBand.getSourceImage());
     }
 
     private static boolean isProductMerisFullResoultion(final Product product) {
