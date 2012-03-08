@@ -55,44 +55,12 @@
     </distributionManagement>
 
     <properties>
-        <!--
-           In version 3.0 of Maven the sourceEncoding property will be embedded in the
-           build tag. For now the convention is to that it as property.
-           TODO: Move the sourceEncoding property to the build tag if version 3.0 is released
-           -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <beam.version>4.9</beam.version>
-        <ceres.version>0.12</ceres.version>
+        <beam.version>4.10-SNAPSHOT</beam.version>
     </properties>
     <dependencies>
 
         <!-- Ceres System Level Module ############################################# -->
-
-        <dependency>
-            <groupId>com.bc.ceres</groupId>
-            <artifactId>ceres-launcher</artifactId>
-            <version>${ceres.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.bc.ceres</groupId>
-            <artifactId>ceres-core</artifactId>
-            <version>${ceres.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.bc.ceres</groupId>
-            <artifactId>ceres-binding</artifactId>
-            <version>${ceres.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.bc.ceres</groupId>
-            <artifactId>ceres-ui</artifactId>
-            <version>${ceres.version}</version>
-        </dependency>
-
 
         <dependency>
             <groupId>org.esa.beam</groupId>
@@ -117,7 +85,7 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-meris-radiometry</artifactId>
-            <version>1.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam.glint</groupId>
