@@ -71,10 +71,13 @@ public class GlintCorrectionOperator extends Operator {
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
-    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/23x25x45_42632.7.net";
+    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x57x47_29028.5.net";
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
     public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
-    public static final String ATMO_AANN_NET = "atmo_aann/12x5x12_161.3.net";
+    public static final String ATMO_AANN_NET = "atmo_aann/21x5x21_20.4.net";
+    // todo: this is a special case to keep previous state for the moment. remove later
+    public static final String MERIS_ATMOSPHERIC_NET_NAME_OLD = "atmo_correct_meris/23x25x45_42632.7.net";
+    public static final String ATMO_AANN_NET_OLD = "atmo_aann/12x5x12_161.3.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
@@ -153,7 +156,7 @@ public class GlintCorrectionOperator extends Operator {
 
     @Parameter(defaultValue = "false",
                label = "Perform Smile-effect correction",
-               description = "Whether to perform Smile-effect correction.")
+               description = "Whether to performFlint Smile-effect correction.")
     private boolean doSmileCorrection;
 
     @Parameter(defaultValue = "true", label = "Output TOSA reflectance",
@@ -176,7 +179,7 @@ public class GlintCorrectionOperator extends Operator {
     @Parameter(defaultValue = "RADIANCE_REFLECTANCES", valueSet = {"RADIANCE_REFLECTANCES", "IRRADIANCE_REFLECTANCES"},
                label = "Output water leaving reflectance as",
                description = "Select if reflectances shall be written as radiances or irradiances. " +
-                             "The irradiances are compatible with standard MERIS product.")
+                       "The irradiances are compatible with standard MERIS product.")
     private ReflectanceEnum outputReflecAs;
 
     @Parameter(defaultValue = "true", label = "Output path reflectance",
@@ -206,7 +209,7 @@ public class GlintCorrectionOperator extends Operator {
 
     @Parameter(label = "Use climatology map for salinity and temperature", defaultValue = "true",
                description = "By default a climatology map is used. If set to 'false' the specified average values are used " +
-                             "for the whole scene.")
+                       "for the whole scene.")
     private boolean useSnTMap;
     @Parameter(label = "Average salinity", defaultValue = "35", unit = "PSU", description = "The salinity of the water")
     private double averageSalinity;
@@ -312,7 +315,7 @@ public class GlintCorrectionOperator extends Operator {
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
         // copy altitude band if it exists and 'beam.envisat.usePixelGeoCoding' is set to true
         if (Boolean.getBoolean("beam.envisat.usePixelGeoCoding") &&
-            merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
+                merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
             Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME, merisProduct,
                                                     outputProduct, true);
         }
@@ -333,7 +336,13 @@ public class GlintCorrectionOperator extends Operator {
         toaValidationProduct = validationOp.getTargetProduct();
         validationBand = toaValidationProduct.getBandAt(0);
 
-        InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+        InputStream merisNeuralNetStream;
+        if (atmoNetMerisFile.equals((new File(MERIS_ATMOSPHERIC_NET_NAME_OLD)))) {
+            // todo: this is a special case to keep previous state for the moment. remove later
+            merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME_OLD, atmoNetMerisFile);
+        } else {
+            merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+        }
         merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
 
         if (useFlint && aatsrProduct != null) {
@@ -344,8 +353,16 @@ public class GlintCorrectionOperator extends Operator {
             final InputStream neuralNetStream = getClass().getResourceAsStream(NORMALIZATION_NET_NAME);
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
-        final InputStream neuralNetStream = getNeuralNetStream(ATMO_AANN_NET, autoassociativeNetFile);
-        atmoAaNeuralNetString = readNeuralNetFromStream(neuralNetStream);
+
+        InputStream aannNeuralNetStream;
+        if (autoassociativeNetFile.equals((new File(ATMO_AANN_NET_OLD)))) {
+            // todo: this is a special case to keep previous state for the moment. remove later
+            aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET_OLD, autoassociativeNetFile);
+        } else {
+            aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET, autoassociativeNetFile);
+        }
+        atmoAaNeuralNetString = readNeuralNetFromStream(aannNeuralNetStream);
+
         if (doSmileCorrection) {
             try {
                 smileAuxData = SmileCorrectionAuxdata.loadAuxdata(merisProduct.getProductType());
@@ -390,7 +407,7 @@ public class GlintCorrectionOperator extends Operator {
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws
-                                                                                                             OperatorException {
+            OperatorException {
         pm.beginTask("Correcting atmosphere...", targetRectangle.height);
         try {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
@@ -440,10 +457,17 @@ public class GlintCorrectionOperator extends Operator {
 
                     GlintResult glintResult;
                     if (aatsrFlintCorrection != null && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
-                        glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
+                        glintResult = aatsrFlintCorrection.performFlint(inputData, deriveRwFromPath, temperature, salinity);
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     } else {
-                        glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
+                        if (atmoNetMerisFile.equals((new File(MERIS_ATMOSPHERIC_NET_NAME_OLD)))) {
+                            // todo: this is a special case to to allow using previous state for the moment
+                            // in this case, the AC net has same structure as flint net
+                            glintResult = merisGlintCorrection.performFlint(inputData, deriveRwFromPath, temperature, salinity);
+                        } else {
+                            // new AC net (RD, March 2012)
+                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
+                        }
                     }
 
                     fillTargetSampleData(targetSampleDataMap, pixelIndex, inputData, glintResult);
