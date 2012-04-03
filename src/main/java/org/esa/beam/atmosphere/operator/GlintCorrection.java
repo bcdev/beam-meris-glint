@@ -301,7 +301,7 @@ public class GlintCorrection {
         }
         for (int i = 0; i < rlTosa.length; i++) {
 //            atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i]);
-            atmoNetInput[i + atmoNetInputIndex] = rlTosa[i];
+            atmoNetInput[i + atmoNetInputIndex] = rlTosa[i] * Math.PI;
         }
         // last input is log_rlglint_13 in synergyMode
         if (isFlintMode) {
@@ -406,11 +406,10 @@ public class GlintCorrection {
 
     private double[] computeXYZCoordinates(double tetaViewSurfRad, double aziDiffSurfRad) {
         double[] xyz = new double[3];
-        double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
 
-        xyz[0] = cosTetaViewSurfRad * Math.cos(aziDiffSurfRad);
-        xyz[1] = cosTetaViewSurfRad * Math.sin(aziDiffSurfRad);
-        xyz[2] = Math.sin(tetaViewSurfRad);
+        xyz[0] = Math.sin(tetaViewSurfRad) * Math.cos(aziDiffSurfRad);
+        xyz[1] = Math.sin(tetaViewSurfRad) * Math.sin(aziDiffSurfRad);
+        xyz[2] = Math.cos(tetaViewSurfRad);
         return xyz;
     }
 
@@ -490,6 +489,9 @@ public class GlintCorrection {
 
 
     private static double getAzimuthDifference(PixelData pixel) {
+//        delta_azimuth=fabs(view_azimuth-sun_azimuth);
+//       	if(delta_azimuth>180.0) delta_azimuth=180.0-delta_azimuth;
+
         double aziViewSurfRad = Math.toRadians(pixel.satazi);
         double aziSunSurfRad = Math.toRadians(pixel.solazi);
         double aziDiffSurfRad = Math.acos(Math.cos(aziViewSurfRad - aziSunSurfRad));
