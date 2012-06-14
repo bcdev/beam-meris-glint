@@ -327,11 +327,17 @@ public class GlintCorrection {
 //            atmoNetOutput[i + 24] = Math.exp(
 //                    atmoNetOutput[i + 24]) / cosTetaSunSurfRad; //outnet is Ed_boa, not transmittance
         }
+        // another new net, 2012/06/08: output changed again to log... :-)
+        // also, we have only 12 outputs (log_rw),
+        // we do not have the rho_path, t_down, t_up any more (RD: "we don't need them")
+        for (int i = 0; i < 12; i++) {
+            atmoNetOutput[i] = Math.exp(atmoNetOutput[i]);
+        }
 
-        final double[] transds = Arrays.copyOfRange(atmoNetOutput, 24, 36);
-        glintResult.setTrans(transds);
-        final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
-        glintResult.setPath(rwPaths);
+//        final double[] transds = Arrays.copyOfRange(atmoNetOutput, 24, 36);
+//        glintResult.setTrans(transds);
+//        final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
+//        glintResult.setPath(rwPaths);
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
@@ -340,12 +346,14 @@ public class GlintCorrection {
             radiance2IrradianceFactor = 1.0; // radiance reflectance
         }
         for (int i = 0; i < reflec.length; i++) {
-            if (deriveRwFromPath) {
-                reflec[i] = deriveReflecFromPath(rwPaths[i], transds[i], rlTosa[i], cosTetaViewSurfRad,
-                                                 cosTetaSunSurfRad, radiance2IrradianceFactor);
-            } else {
-                reflec[i] *= radiance2IrradianceFactor;
-            }
+            // in the latest net, we do not have the paths any more (see above)
+//            if (deriveRwFromPath) {
+//                reflec[i] = deriveReflecFromPath(rwPaths[i], transds[i], rlTosa[i], cosTetaViewSurfRad,
+//                                                 cosTetaSunSurfRad, radiance2IrradianceFactor);
+//            } else {
+//                reflec[i] *= radiance2IrradianceFactor;
+//            }
+            reflec[i] *= radiance2IrradianceFactor;
         }
         glintResult.setReflec(reflec);
 
