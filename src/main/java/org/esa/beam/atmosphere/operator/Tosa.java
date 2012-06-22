@@ -111,7 +111,7 @@ class Tosa {
         double phase_rayl = 3.0 / (4.0 * (1.0 + 2.0 * gam)) * ((1.0 - gam) * cos_scat_ang * cos_scat_ang + (1.0 + 3.0 * gam));
 
         /* ozon and rayleigh correction layer transmission */
-        double ozon_rest_mass = (pixel.ozone / 1000.0 - 0.35); /* conc ozone from MERIS is in DU */
+        double ozon_rest_mass = (pixel.ozone / 1000.0); /* conc ozone from MERIS is in DU */
         for (int i = 0; i < trans_oz_down_rest.length; i++) {
             final double ozonAbsorption = -OZON_ABSORPTION[i];
             final double scaledTauRaylRest = -tau_rayl_rest[i] * 0.5; /* 0.5 because diffuse trans */

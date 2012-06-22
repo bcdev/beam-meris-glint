@@ -300,9 +300,8 @@ public class GlintCorrection {
             atmoNetInput[atmoNetInputIndex++] = salinity;
         }
         for (int i = 0; i < rlTosa.length; i++) {
-//            atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i]);
-            atmoNetInput[i + atmoNetInputIndex] = Math.log(rlTosa[i] * Math.PI);
-//            atmoNetInput[i + atmoNetInputIndex] = rlTosa[i] * Math.PI;
+            final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
+            atmoNetInput[i + atmoNetInputIndex] = Math.log(rTosa);
         }
         // last input is log_rlglint_13 in synergyMode
         if (isFlintMode) {
