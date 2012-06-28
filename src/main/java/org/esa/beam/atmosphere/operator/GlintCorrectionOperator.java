@@ -71,12 +71,11 @@ public class GlintCorrectionOperator extends Operator {
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
-//    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x57x47_29028.5.net";
 
-
-    //    31x47x37_26651.6
+    // another new net from RD, 2012/06/28:
+    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_57596.9.net";
     // another new net from RD, 2012/06/18:
-    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_26651.6.net";
+//    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_26651.6.net";
     // another new net from RD, 2012/06/08:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_72066.8.net";
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
