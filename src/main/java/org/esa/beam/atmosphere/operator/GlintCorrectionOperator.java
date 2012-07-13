@@ -70,7 +70,7 @@ public class GlintCorrectionOperator extends Operator {
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
-    private static final String VALID_EXPRESSION = String.format("!%s.INVALID", AGC_FLAG_BAND_NAME);
+    private static final String VALID_EXPRESSION = String.format("!%s.INPUT_INVALID", AGC_FLAG_BAND_NAME);
 
     // another new net from RD, 2012/07/06:  (changed again to rw_logrtosa)
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_1618.6.net";
@@ -83,6 +83,7 @@ public class GlintCorrectionOperator extends Operator {
     // another new net from RD, 2012/06/08:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_72066.8.net";
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
+    public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/31x47x37_31103.9.net";
     public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
     public static final String ATMO_AANN_NET = "atmo_aann/21x5x21_20.4.net";
     // todo: this is a special case to keep previous state for the moment. remove later
@@ -221,17 +222,28 @@ public class GlintCorrectionOperator extends Operator {
                description = "By default a climatology map is used. If set to 'false' the specified average values are used " +
                        "for the whole scene.")
     private boolean useSnTMap;
+
     @Parameter(label = "Average salinity", defaultValue = "35", unit = "PSU", description = "The salinity of the water")
     private double averageSalinity;
+
     @Parameter(label = "Average temperature", defaultValue = "15", unit = "°C", description = "The Water temperature")
     private double averageTemperature;
 
+    @Parameter(label = "TOSA OOS Threshold", defaultValue = "0.05",
+               description = "TOSA out of scope threshold: If chi_square_error is larger, TOSA_OOS flag is raised.")
+    private double tosaOosThresh;
 
     @Parameter(label = "MERIS net (full path required for other than default)",
                defaultValue = MERIS_ATMOSPHERIC_NET_NAME,
                description = "The file of the atmospheric net to be used instead of the default neural net.",
                notNull = false)
     private File atmoNetMerisFile;
+
+    @Parameter(label = "Aot/Angstroem net (full path required for other than default)",
+               defaultValue = INV_AOT_ANG_NET_NAME,
+               description = "The file of the AOT/Angstroem net to be used instead of the default neural net.",
+               notNull = false)
+    private File invAotAngNetFile;
 
     @Parameter(label = "Autoassociatve net (full path required for other than default)",
                defaultValue = ATMO_AANN_NET,
@@ -253,6 +265,7 @@ public class GlintCorrectionOperator extends Operator {
 
     public static final double NO_FLINT_VALUE = -1.0;
     private String merisNeuralNetString;
+    private String invAotAngNeuralNetString;
     private String flintNeuralNetString;
     private String normalizationNeuralNetString;
     private String atmoAaNeuralNetString;
@@ -355,6 +368,9 @@ public class GlintCorrectionOperator extends Operator {
         }
         merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
 
+        InputStream invAotAngNeuralNetStream = getNeuralNetStream(INV_AOT_ANG_NET_NAME, invAotAngNetFile);
+        invAotAngNeuralNetString = readNeuralNetFromStream(invAotAngNeuralNetStream);
+
         if (useFlint && aatsrProduct != null) {
             InputStream neuralNetStream = getNeuralNetStream(FLINT_ATMOSPHERIC_NET_NAME, atmoNetFlintFile);
             flintNeuralNetString = readNeuralNetFromStream(neuralNetStream);
@@ -431,11 +447,12 @@ public class GlintCorrectionOperator extends Operator {
             NNffbpAlphaTabFast autoAssocNet = new NNffbpAlphaTabFast(atmoAaNeuralNetString);
 
             GlintCorrection merisGlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(merisNeuralNetString),
+                                                                       new NNffbpAlphaTabFast(invAotAngNeuralNetString),
                                                                        smileAuxData, normalizationNet, autoAssocNet,
                                                                        outputReflecAs);
-            GlintCorrection aatsrFlintCorrection = null;
+            FlintCorrection aatsrFlintCorrection = null;
             if (useFlint && flintProduct != null) {
-                aatsrFlintCorrection = new GlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
+                aatsrFlintCorrection = new FlintCorrection(new NNffbpAlphaTabFast(flintNeuralNetString), smileAuxData,
                                                            normalizationNet, autoAssocNet, outputReflecAs
                 );
             }
@@ -465,18 +482,18 @@ public class GlintCorrectionOperator extends Operator {
                         temperature = averageTemperature;
                     }
 
-                    GlintResult glintResult;
+                    GlintResult glintResult = null;
                     if (aatsrFlintCorrection != null && GlintCorrection.isFlintValueValid(inputData.flintValue)) {
-                        glintResult = aatsrFlintCorrection.performFlint(inputData, deriveRwFromPath, temperature, salinity);
+                        glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     } else {
                         if (atmoNetMerisFile.equals((new File(MERIS_ATMOSPHERIC_NET_NAME_OLD)))) {
                             // todo: this is a special case to to allow using previous state for the moment
                             // in this case, the AC net has same structure as flint net
-                            glintResult = merisGlintCorrection.performFlint(inputData, deriveRwFromPath, temperature, salinity);
+                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
                         } else {
                             // new AC net (RD, March 2012)
-                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity);
+                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
                         }
                     }
 
@@ -684,7 +701,7 @@ public class GlintCorrectionOperator extends Operator {
 
         addFlagAttribute(flagCoding, "LAND", "Land pixels", GlintCorrection.LAND);
         addFlagAttribute(flagCoding, "CLOUD_ICE", "Cloud or ice pixels", GlintCorrection.CLOUD_ICE);
-        addFlagAttribute(flagCoding, "ATC_OOR", "Atmospheric correction out of range", GlintCorrection.ATC_OOR);
+        addFlagAttribute(flagCoding, "AOT560_OOR", "Atmospheric correction out of range", GlintCorrection.AOT560_OOR);
         addFlagAttribute(flagCoding, "TOA_OOR", "TOA out of range", GlintCorrection.TOA_OOR);
         addFlagAttribute(flagCoding, "TOSA_OOR", "TOSA out of range", GlintCorrection.TOSA_OOR);
         addFlagAttribute(flagCoding, "SOLZEN", "Large solar zenith angle", GlintCorrection.SOLZEN);
@@ -692,8 +709,8 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
         addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
                          GlintCorrection.HAS_FLINT);
-        addFlagAttribute(flagCoding, "INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
-                         GlintCorrection.INVALID);
+        addFlagAttribute(flagCoding, "INPUT_INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+                         GlintCorrection.INPUT_INVALID);
 
         return flagCoding;
     }
@@ -799,7 +816,7 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE",
                                  Color.WHITE, 0.5f));
-        maskGroup.add(createMask(product, "atc_oor", "Atmospheric correction out of range", "agc_flags.ATC_OOR",
+        maskGroup.add(createMask(product, "aot560_oor", "AOT at 560nm out of range", "agc_flags.AOT560_OOR",
                                  Color.ORANGE, 0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
@@ -809,7 +826,7 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",
                                  Color.RED, 0.5f));
         maskGroup.add(createMask(product, "agc_invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
-                                 "agc_flags.INVALID", Color.RED, 0.5f));
+                                 "agc_flags.INPUT_INVALID", Color.RED, 0.5f));
     }
 
     private static Mask createMask(Product product, String name, String description, String expression, Color color,
