@@ -54,7 +54,7 @@ public class ToaReflectanceValidationOp extends Operator {
                notNull = true)
     private String cloudIceExpression = "l1_flags.INVALID";
 
-    @Parameter(defaultValue = "toa_reflec_13 >  0.035", label = "Out of range detection expression")
+    @Parameter(defaultValue = "toa_reflec_13 >  0.035", label = "'TOA out of range' (TOA_OOR flag) detection expression")
     private String rlToaOorExpression;
 
     private Band landWaterBand;

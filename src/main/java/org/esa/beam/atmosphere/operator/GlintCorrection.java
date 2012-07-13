@@ -25,7 +25,7 @@ public class GlintCorrection {
     public static final int TOSA_OOR = 0x10;
     public static final int SOLZEN = 0x20;
     public static final int ANCIL = 0x40;
-    public static final int SUNGLINT = 0x08;
+    public static final int SUNGLINT = 0x80;
     public static final int HAS_FLINT = 0x100;
     public static final int INVALID = 0x8000;  // LAND || CLOUD_ICE || l1_flags.INVALID
 
@@ -330,6 +330,9 @@ public class GlintCorrection {
         // another new net, 2012/06/08: output changed again to log... :-)
         // also, we have only 12 outputs (log_rw),
         // we do not have the rho_path, t_down, t_up any more (RD: "we don't need them")
+
+        // another new net from RD, 2012/07/06:  (31x47x37_1618.6.net, this changed again to rw_logrtosa. In this case, comment following lines)
+        // another new net from RD, 2012/07/06:  (31x47x37_21434.7.net)
         for (int i = 0; i < 12; i++) {
             atmoNetOutput[i] = Math.exp(atmoNetOutput[i]);
         }
