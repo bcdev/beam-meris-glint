@@ -694,6 +694,7 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "AOT560_OOR", "Atmospheric correction out of range", GlintCorrection.AOT560_OOR);
         addFlagAttribute(flagCoding, "TOA_OOR", "TOA out of range", GlintCorrection.TOA_OOR);
         addFlagAttribute(flagCoding, "TOSA_OOR", "TOSA out of range", GlintCorrection.TOSA_OOR);
+        addFlagAttribute(flagCoding, "TOSA_OOS", "TOSA out of scope", GlintCorrection.TOSA_OOS);
         addFlagAttribute(flagCoding, "SOLZEN", "Large solar zenith angle", GlintCorrection.SOLZEN);
         addFlagAttribute(flagCoding, "ANCIL", "Missing/OOR auxiliary data", GlintCorrection.ANCIL);
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
@@ -812,7 +813,8 @@ public class GlintCorrectionOperator extends Operator {
                                  Color.ORANGE, 0.5f));
         maskGroup.add(createMask(product, "toa_oor", "TOA out of range", "agc_flags.TOA_OOR", Color.MAGENTA, 0.5f));
         maskGroup.add(createMask(product, "tosa_oor", "TOSA out of range", "agc_flags.TOSA_OOR", Color.CYAN, 0.5f));
-        maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.PINK, 0.5f));
+        maskGroup.add(createMask(product, "tosa_oos", "TOSA out of scope", "agc_flags.TOSA_OOS", Color.PINK, 0.5f));
+        maskGroup.add(createMask(product, "solzen", "Large solar zenith angle", "agc_flags.SOLZEN", Color.DARK_GRAY, 0.5f));
         maskGroup.add(createMask(product, "ancil", "Missing/OOR auxiliary data", "agc_flags.ANCIL", Color.BLUE, 0.5f));
         maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
         maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",

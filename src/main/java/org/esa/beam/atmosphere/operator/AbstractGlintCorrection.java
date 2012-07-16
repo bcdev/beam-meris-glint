@@ -21,9 +21,10 @@ abstract class AbstractGlintCorrection {
     static final int AOT560_OOR = 0x04;
     static final int TOA_OOR = 0x08;
     static final int TOSA_OOR = 0x10;
-    static final int SOLZEN = 0x20;
-    static final int ANCIL = 0x40;
-    static final int SUNGLINT = 0x80;
+    static final int TOSA_OOS = 0x20;
+    static final int SOLZEN = 0x40;
+    static final int ANCIL = 0x80;
+    static final int SUNGLINT = 0x81;
     static final int HAS_FLINT = 0x100;
     static final int INPUT_INVALID = 0x8000;  // LAND || CLOUD_ICE || l1_flags.INVALID
 
