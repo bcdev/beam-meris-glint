@@ -84,8 +84,7 @@ abstract class AbstractGlintCorrection {
         return xyz;
     }
 
-    void computeError(double[] rlTosa, double[] autoAssocNetInput, GlintResult glintResult) {
-        double[] aaNNOutnet = autoAssocNet.calc(autoAssocNetInput);
+    void computeError(double[] rlTosa, double[] aaNNOutnet, GlintResult glintResult) {
         double[] autoRlTosa = aaNNOutnet.clone();
         for (int i = 0; i < autoRlTosa.length; i++) {
             autoRlTosa[i] = Math.exp(autoRlTosa[i]);
@@ -97,14 +96,8 @@ abstract class AbstractGlintCorrection {
             chi_sum += Math.pow(((logRlTosa - aaNNOutnet[i]) / logRlTosa), 2.0); //RD20110116
         }
         double error = Math.sqrt(chi_sum / rlTosa.length);
-        glintResult.setTosaQualityIndicator(error);
-
-        // todo - raise a flag
-//        water->error_rltosa=error;
-//        if(error > THRESH_RL_TOSA_OOS) {
-//            *c2r_megs_flag |=  PCD_16; /* RL_tosa is out of scope of the nn, OR with pcd_16 */
-//        }
-
+        final double chi_square = error * error;
+        glintResult.setTosaQualityIndicator(chi_square);  // todo: clarify what to compute
     }
 
 

@@ -52,6 +52,9 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
         final double cosTetaSunSurfRad = Math.cos(tetaSunSurfRad);
 
+        final double aziViewSurf = pixel.satazi;
+        final double aziSunSurf = pixel.solazi;
+
         double[] xyz = computeXYZCoordinates(tetaViewSurfRad, aziDiffSurfRad);
 
         final GlintResult glintResult = new GlintResult();
@@ -113,6 +116,28 @@ public class GlintCorrection extends AbstractGlintCorrection {
             glintResult.raiseFlag(ANCIL);
         }
 
+        int autoAssocNetInputIndex = 0;
+        double[] autoAssocNetInput = new double[autoAssocNet.getInmin().length];
+        autoAssocNetInput[autoAssocNetInputIndex++] = tetaSunSurfDeg;
+        autoAssocNetInput[autoAssocNetInputIndex++] = xyz[0];
+        autoAssocNetInput[autoAssocNetInputIndex++] = xyz[1];
+        autoAssocNetInput[autoAssocNetInputIndex++] = xyz[2];
+        autoAssocNetInput[autoAssocNetInputIndex++] = temperature;
+        autoAssocNetInput[autoAssocNetInputIndex++] = salinity;
+
+        for (int i = 0; i < rlTosa.length; i++) {
+            final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
+            autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa;
+        }
+        double[] autoAssocNetOutput = atmosphereNet.calc(autoAssocNetInput);
+
+        glintResult.setAutoTosaReflec(new double[]{Double.NaN});
+        computeError(rlTosa, autoAssocNetOutput, glintResult);
+        if (glintResult.getTosaQualityIndicator() > tosaOosThresh) {
+            // todo
+//            glintResult.raiseFlag(TOSA_OOS);
+        }
+
         int atmoNetInputIndex = 0;
         double[] atmoNetInput = new double[atmosphereNet.getInmin().length];
         atmoNetInput[atmoNetInputIndex++] = tetaSunSurfDeg;
@@ -126,17 +151,6 @@ public class GlintCorrection extends AbstractGlintCorrection {
             final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
             atmoNetInput[i + atmoNetInputIndex] = Math.log(rTosa);
         }
-
-        computeError(rlTosa, atmoNetInput, glintResult);
-        if (glintResult.getTosaQualityIndicator() > tosaOosThresh) {
-            // todo
-//            glintResult.raiseFlag(TOSA_OOS);
-        }
-
-        glintResult.setAutoTosaReflec(new double[]{Double.NaN});
-        glintResult.setTosaQualityIndicator(Double.NaN);
-
-
         double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
 
         for (int i = 0; i < 12; i++) {
@@ -161,6 +175,7 @@ public class GlintCorrection extends AbstractGlintCorrection {
 //        glintResult.setTrans(transds);
 //        final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
 //        glintResult.setPath(rwPaths);
+//        final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
@@ -181,17 +196,23 @@ public class GlintCorrection extends AbstractGlintCorrection {
         glintResult.setReflec(reflec);
 
         if (normalizationNet != null) {
-            double[] normInNet = new double[15];
+//            double[] normInNet = new double[15];
+            double[] normInNet = new double[17];   // new net 20120716
             normInNet[0] = tetaSunSurfDeg;
             normInNet[1] = tetaViewSurfDeg;
-            normInNet[2] = aziDiffSurfDeg;
+//            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
+            normInNet[2] = aziViewSurf;       // new net 20120716
+            normInNet[3] = temperature;       // new net 20120716
+            normInNet[4] = salinity;
             for (int i = 0; i < 12; i++) {
-                normInNet[i + 3] = Math.log(reflec[i]);
+//                normInNet[i + 3] = Math.log(reflec[i]); // log(r)
+                normInNet[i + 5] = Math.log(reflec[i]/Math.PI); // log(rl), new net 20120716, rl=r/PI
             }
             final double[] normOutNet = normalizationNet.calc(normInNet);
             final double[] normReflec = new double[reflec.length];
             for (int i = 0; i < 12; i++) {
-                normReflec[i] = Math.exp(normOutNet[i]);
+//                normReflec[i] = Math.exp(normOutNet[i]);
+                normReflec[i] = Math.exp(normOutNet[i]*Math.PI); // r=rl*PI
             }
             glintResult.setNormReflec(normReflec);
         }

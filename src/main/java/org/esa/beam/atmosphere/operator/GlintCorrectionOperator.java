@@ -84,11 +84,14 @@ public class GlintCorrectionOperator extends Operator {
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_72066.8.net";
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
     public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/31x47x37_31103.9.net";
-    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
-    public static final String ATMO_AANN_NET = "atmo_aann/21x5x21_20.4.net";
-    // todo: this is a special case to keep previous state for the moment. remove later
-    public static final String MERIS_ATMOSPHERIC_NET_NAME_OLD = "atmo_correct_meris/23x25x45_42632.7.net";
-    public static final String ATMO_AANN_NET_OLD = "atmo_aann/12x5x12_161.3.net";
+
+    //    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
+    // new net from RD, 2012/07/16:
+    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/23x17_29.6.net";
+
+//    public static final String ATMO_AANN_NET = "atmo_aann/21x5x21_20.4.net";
+    // new net from RD, 2012/07/16:
+    public static final String ATMO_AANN_NET_NAME = "atmo_aann/23x5x23_96.0.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
@@ -174,6 +177,10 @@ public class GlintCorrectionOperator extends Operator {
                description = "Toggles the output of Top of Standard Atmosphere reflectance.")
     private boolean outputTosa;
 
+    @Parameter(defaultValue = "true", label = "Output TOSA Quality Indicator",
+               description = "Toggles the output of Top of Standard Atmosphere reflectance quality indicator.")
+    private boolean outputTosaQualityIndicator;
+
     @Parameter(defaultValue = "false", label = "Output TOSA reflectance of auto assoc. neural net",
                description = "Toggles the output of Top of Standard Atmosphere reflectance calculated by an auto associative neural net.")
     private boolean outputAutoTosa;
@@ -246,7 +253,7 @@ public class GlintCorrectionOperator extends Operator {
     private File invAotAngNetFile;
 
     @Parameter(label = "Autoassociatve net (full path required for other than default)",
-               defaultValue = ATMO_AANN_NET,
+               defaultValue = ATMO_AANN_NET_NAME,
                description = "The file of the autoassociative net used for error computed instead of the default neural net.",
                notNull = false)
     private File autoassociativeNetFile;
@@ -359,13 +366,7 @@ public class GlintCorrectionOperator extends Operator {
         toaValidationProduct = validationOp.getTargetProduct();
         validationBand = toaValidationProduct.getBandAt(0);
 
-        InputStream merisNeuralNetStream;
-        if (atmoNetMerisFile.equals((new File(MERIS_ATMOSPHERIC_NET_NAME_OLD)))) {
-            // todo: this is a special case to keep previous state for the moment. remove later
-            merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME_OLD, atmoNetMerisFile);
-        } else {
-            merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
-        }
+        InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
         merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
 
         InputStream invAotAngNeuralNetStream = getNeuralNetStream(INV_AOT_ANG_NET_NAME, invAotAngNetFile);
@@ -380,13 +381,7 @@ public class GlintCorrectionOperator extends Operator {
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
 
-        InputStream aannNeuralNetStream;
-        if (autoassociativeNetFile.equals((new File(ATMO_AANN_NET_OLD)))) {
-            // todo: this is a special case to keep previous state for the moment. remove later
-            aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET_OLD, autoassociativeNetFile);
-        } else {
-            aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET, autoassociativeNetFile);
-        }
+        InputStream aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET_NAME, autoassociativeNetFile);
         atmoAaNeuralNetString = readNeuralNetFromStream(aannNeuralNetStream);
 
         if (doSmileCorrection) {
@@ -487,14 +482,7 @@ public class GlintCorrectionOperator extends Operator {
                         glintResult = aatsrFlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
                         glintResult.raiseFlag(GlintCorrection.HAS_FLINT);
                     } else {
-                        if (atmoNetMerisFile.equals((new File(MERIS_ATMOSPHERIC_NET_NAME_OLD)))) {
-                            // todo: this is a special case to to allow using previous state for the moment
-                            // in this case, the AC net has same structure as flint net
-                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
-                        } else {
-                            // new AC net (RD, March 2012)
-                            glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
-                        }
+                        glintResult = merisGlintCorrection.perform(inputData, deriveRwFromPath, temperature, salinity, tosaOosThresh);
                     }
 
                     fillTargetSampleData(targetSampleDataMap, pixelIndex, inputData, glintResult);
@@ -588,6 +576,8 @@ public class GlintCorrectionOperator extends Operator {
 
         if (outputTosa) {
             fillTargetSample(TOSA_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getTosaReflec());
+        }
+        if (outputTosa || outputTosaQualityIndicator) {
             final ProductData quality = targetSampleData.get(TOSA_QUALITY_INDICATOR_BAND_NAME);
             quality.setElemDoubleAt(pixelIndex, glintResult.getTosaQualityIndicator());
         }
@@ -730,9 +720,6 @@ public class GlintCorrectionOperator extends Operator {
         if (outputTosa) {
             addSpectralTargetBands(product, TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
             groupList.add("tosa_reflec");
-            addNonSpectralTargetBand(product, TOSA_QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
-                                     "dl");
-
         }
         if (outputAutoTosa) {
             addSpectralTargetBands(product, AUTO_TOSA_REFLEC_BAND_NAMES, "TOSA Reflectance at {0} nm", "sr^-1");
@@ -779,6 +766,11 @@ public class GlintCorrectionOperator extends Operator {
         tau778.setSpectralWavelength(778);
         final Band tau865 = addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
         tau865.setSpectralWavelength(865);
+
+        if (outputTosa || outputTosaQualityIndicator) {
+            addNonSpectralTargetBand(product, TOSA_QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
+                                     "dl");
+        }
 
         if (flintProduct == null) {
             addNonSpectralTargetBand(product, GLINT_RATIO, "Glint ratio", "dl");
