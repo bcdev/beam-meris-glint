@@ -26,6 +26,7 @@ abstract class AbstractGlintCorrection {
     static final int ANCIL = 0x80;
     static final int SUNGLINT = 0x81;
     static final int HAS_FLINT = 0x100;
+    static final int REFL_INVALID = 0x4000;  // todo: define when to raise
     static final int INPUT_INVALID = 0x8000;  // LAND || CLOUD_ICE || l1_flags.INVALID
 
     static final int L1_INVALID_FLAG = 0x80;
@@ -86,19 +87,20 @@ abstract class AbstractGlintCorrection {
     }
 
     void computeError(double[] rlTosa, double[] aaNNOutnet, GlintResult glintResult) {
-        double[] autoRlTosa = aaNNOutnet.clone();
-        for (int i = 0; i < autoRlTosa.length; i++) {
-            autoRlTosa[i] = Math.exp(autoRlTosa[i]);
+        double[] autoRTosa = aaNNOutnet.clone();
+        double[] autoRlTosa = new double[autoRTosa.length];
+        for (int i = 0; i < autoRTosa.length; i++) {
+            autoRlTosa[i] = autoRTosa[i]/Math.PI;
         }
         glintResult.setAutoTosaReflec(autoRlTosa);
         double chi_sum = 0.0;
         for (int i = 0; i < rlTosa.length; i++) {
-            double logRlTosa = Math.log(rlTosa[i]);
-            chi_sum += Math.pow(((logRlTosa - aaNNOutnet[i]) / logRlTosa), 2.0); //RD20110116
+            final double logRlTosa = Math.log(rlTosa[i]);
+            final double logAutoRlTosa = Math.log(autoRlTosa[i]);
+            chi_sum += Math.pow(((logRlTosa - logAutoRlTosa) / logRlTosa), 2.0); //RD20110116
         }
-        double error = Math.sqrt(chi_sum / rlTosa.length);
-        final double chi_square = error * error;
-        glintResult.setTosaQualityIndicator(chi_square);  // todo: clarify what to compute
+        final double chi_square = chi_sum / rlTosa.length;
+        glintResult.setTosaQualityIndicator(chi_square);
     }
 
 

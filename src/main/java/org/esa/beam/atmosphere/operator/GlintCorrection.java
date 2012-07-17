@@ -129,9 +129,8 @@ public class GlintCorrection extends AbstractGlintCorrection {
             final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
             autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa;
         }
-        double[] autoAssocNetOutput = atmosphereNet.calc(autoAssocNetInput);
+        double[] autoAssocNetOutput = autoAssocNet.calc(autoAssocNetInput);
 
-        glintResult.setAutoTosaReflec(new double[]{Double.NaN});
         computeError(rlTosa, autoAssocNetOutput, glintResult);
         if (glintResult.getTosaQualityIndicator() > tosaOosThresh) {
             glintResult.raiseFlag(TOSA_OOS);

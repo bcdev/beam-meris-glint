@@ -700,6 +700,8 @@ public class GlintCorrectionOperator extends Operator {
         addFlagAttribute(flagCoding, "SUNGLINT", "Risk of sun glint", GlintCorrection.SUNGLINT);
         addFlagAttribute(flagCoding, "HAS_FLINT", "Flint value available (pixel covered by MERIS/AATSR)",
                          GlintCorrection.HAS_FLINT);
+        addFlagAttribute(flagCoding, "REFL_INVALID", "spare flag (TBD)",
+                         GlintCorrection.REFL_INVALID);
         addFlagAttribute(flagCoding, "INPUT_INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                          GlintCorrection.INPUT_INVALID);
 
@@ -819,6 +821,8 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "sunglint", "Risk of sun glint", "agc_flags.SUNGLINT", Color.YELLOW, 0.5f));
         maskGroup.add(createMask(product, "has_flint", "Flint value computed (AATSR covered)", "agc_flags.HAS_FLINT",
                                  Color.RED, 0.5f));
+        maskGroup.add(createMask(product, "refl_invalid", "spare flag (TBD)",
+                                 "agc_flags.REFL_INVALID", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "agc_invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                                  "agc_flags.INPUT_INVALID", Color.RED, 0.5f));
     }
