@@ -85,7 +85,7 @@ public class GlintCorrectionOperator extends Operator {
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
     public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/31x47x37_31103.9.net";
 
-    //    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
+//        public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
     // new net from RD, 2012/07/16:
     public static final String NORMALIZATION_NET_NAME = "atmo_normalization/23x17_29.6.net";
 

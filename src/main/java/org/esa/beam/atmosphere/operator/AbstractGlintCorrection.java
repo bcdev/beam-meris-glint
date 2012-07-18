@@ -4,6 +4,9 @@ import org.esa.beam.PixelData;
 import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 /**
  * Class providing the AGC Glint correction.
  */
@@ -86,23 +89,55 @@ abstract class AbstractGlintCorrection {
         return xyz;
     }
 
-    void computeError(double[] rlTosa, double[] aaNNOutnet, GlintResult glintResult) {
-        double[] autoRTosa = aaNNOutnet.clone();
-        double[] autoRlTosa = new double[autoRTosa.length];
+//    void computeTosaQuality(double[] rlTosa, double[] aaNNOutnet, GlintResult glintResult) {
+//        double[] autoRTosa = aaNNOutnet.clone();
+//        double[] autoRlTosa = new double[autoRTosa.length];
+//        for (int i = 0; i < autoRTosa.length; i++) {
+//            autoRlTosa[i] = autoRTosa[i]/Math.PI;
+//        }
+//        glintResult.setAutoTosaReflec(autoRlTosa);
+//        double chi_sum = 0.0;
+//        for (int i = 0; i < rlTosa.length; i++) {
+//            final double logRlTosa = Math.log(rlTosa[i]);
+//            final double logAutoRlTosa = Math.log(autoRlTosa[i]);
+//            chi_sum += Math.pow(((logRlTosa - logAutoRlTosa) / logRlTosa), 2.0); //RD20110116
+//        }
+//        final double chi_square = chi_sum / rlTosa.length;
+//        glintResult.setTosaQualityIndicator(chi_square);
+//    }
+
+    static void computeTosaQuality(double[] rlTosa, double[] autoRTosa, GlintResult glintResult) {
+        double[] logAutoRlTosa = new double[autoRTosa.length];
+        double[] logRlTosa = new double[autoRTosa.length];
         for (int i = 0; i < autoRTosa.length; i++) {
-            autoRlTosa[i] = autoRTosa[i]/Math.PI;
+            logRlTosa[i] = Math.log(rlTosa[i]);
+            logAutoRlTosa[i] = Math.log(autoRTosa[i]/Math.PI);
         }
-        glintResult.setAutoTosaReflec(autoRlTosa);
-        double chi_sum = 0.0;
-        for (int i = 0; i < rlTosa.length; i++) {
-            final double logRlTosa = Math.log(rlTosa[i]);
-            final double logAutoRlTosa = Math.log(autoRlTosa[i]);
-            chi_sum += Math.pow(((logRlTosa - logAutoRlTosa) / logRlTosa), 2.0); //RD20110116
-        }
-        final double chi_square = chi_sum / rlTosa.length;
+        final double chi_square = getChiSqrFromLargestDiffs(logRlTosa, logAutoRlTosa, 4);
         glintResult.setTosaQualityIndicator(chi_square);
     }
 
+    /**
+     * get a 'chi square' error for two arrays, considering their largest differences only
+     *
+     * @param arr1
+     * @param arr2
+     * @param numDiffs - the number of differences (sorted descending) to consider
+     * @return the error
+     */
+    static double getChiSqrFromLargestDiffs(double[] arr1, double[] arr2, int numDiffs) {
+        double chi_sum = 0.0;
+        Double[] diff = new Double[arr1.length];
+        for (int i = 0; i < arr1.length; i++) {
+            diff[i] = arr1[i] != 0.0 ? Math.pow(Math.abs((arr1[i] - arr2[i]) / arr1[i]), 2.0) : 0.0;
+        }
+        Arrays.sort(diff, Collections.reverseOrder());
+
+        for (int i = 0; i < numDiffs; i++) {
+            chi_sum += diff[i];
+        }
+        return chi_sum / numDiffs;
+    }
 
     /**
      * This method checks if the given Flint value is valid

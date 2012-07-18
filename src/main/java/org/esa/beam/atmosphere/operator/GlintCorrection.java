@@ -130,8 +130,13 @@ public class GlintCorrection extends AbstractGlintCorrection {
             autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa;
         }
         double[] autoAssocNetOutput = autoAssocNet.calc(autoAssocNetInput);
+        double[] autoRlTosa = new double[autoAssocNetOutput.length];
+        for (int i = 0; i < rlTosa.length; i++) {
+            autoRlTosa[i] = autoAssocNetOutput[i]/Math.PI;
+        }
+        glintResult.setAutoTosaReflec(autoRlTosa);
 
-        computeError(rlTosa, autoAssocNetOutput, glintResult);
+        computeTosaQuality(rlTosa, autoAssocNetOutput, glintResult);
         if (glintResult.getTosaQualityIndicator() > tosaOosThresh) {
             glintResult.raiseFlag(TOSA_OOS);
         }
@@ -193,6 +198,33 @@ public class GlintCorrection extends AbstractGlintCorrection {
         }
         glintResult.setReflec(reflec);
 
+        // OLD normalization net
+//        if (normalizationNet != null) {
+//            double[] normInNet = new double[15];
+////            double[] normInNet = new double[17];   // new net 20120716
+//            normInNet[0] = tetaSunSurfDeg;
+//            normInNet[1] = tetaViewSurfDeg;
+//            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
+////            normInNet[2] = aziViewSurf;       // new net 20120716
+////            normInNet[3] = temperature;       // new net 20120716
+////            normInNet[4] = salinity;
+//            for (int i = 0; i < 12; i++) {
+//                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
+////                normInNet[i + 5] = Math.log(reflec[i]*Math.PI); // log(r), new net 20120716, r=l*PI
+//            }
+//            final double[] normOutNet = normalizationNet.calc(normInNet);
+//            final double[] normReflec = new double[reflec.length];
+//            for (int i = 0; i < 12; i++) {
+//                normReflec[i] = Math.exp(normOutNet[i]);
+////                normReflec[i] = Math.exp(normOutNet[i]/Math.PI); // rl=r/PI
+//            }
+//            glintResult.setNormReflec(normReflec);
+//            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
+//                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
+//            }
+//        }
+
+        // NEW normalization net
         if (normalizationNet != null) {
 //            double[] normInNet = new double[15];
             double[] normInNet = new double[17];   // new net 20120716
@@ -203,16 +235,20 @@ public class GlintCorrection extends AbstractGlintCorrection {
             normInNet[3] = temperature;       // new net 20120716
             normInNet[4] = salinity;
             for (int i = 0; i < 12; i++) {
-//                normInNet[i + 3] = Math.log(reflec[i]); // log(r)
-                normInNet[i + 5] = Math.log(reflec[i]/Math.PI); // log(rl), new net 20120716, rl=r/PI
+//                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
+                normInNet[i + 5] = Math.log(reflec[i] * Math.PI); // log(r), new net 20120716, r=l*PI
             }
             final double[] normOutNet = normalizationNet.calc(normInNet);
             final double[] normReflec = new double[reflec.length];
             for (int i = 0; i < 12; i++) {
 //                normReflec[i] = Math.exp(normOutNet[i]);
-                normReflec[i] = Math.exp(normOutNet[i]*Math.PI); // r=rl*PI
+//                normReflec[i] = Math.exp(normOutNet[i] / Math.PI); // rl=r/PI
+                normReflec[i] = Math.exp(normOutNet[i] - Math.log(Math.PI)); // rl = exp[log(r) - log(PI)] !!!!
             }
             glintResult.setNormReflec(normReflec);
+            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
+                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
+            }
         }
 
         glintResult.setTau550(aot560);
@@ -224,6 +260,26 @@ public class GlintCorrection extends AbstractGlintCorrection {
         glintResult.setAtot(Double.NaN);
 
         return glintResult;
+    }
+
+    private void writeDebugOutput(PixelData pixel, double[] normInNet, double[] normOutNet, double[] reflec, double[] normReflec, double aziDiffSurfDeg) {
+        System.out.println("pixel.satazi = " + pixel.satazi);
+        System.out.println("pixel.satzen = " + pixel.satzen);
+        System.out.println("pixel.solazi = " + pixel.solazi);
+        System.out.println("pixel.solzen = " + pixel.solzen);
+        System.out.println("azimuth diff = " + aziDiffSurfDeg);
+        for (int i = 0; i < reflec.length; i++) {
+            System.out.println("reflec[" + i + "] = " + reflec[i]);
+        }
+        for (int i = 0; i < normInNet.length; i++) {
+            System.out.println("normInNet[" + i + "] = " + normInNet[i]);
+        }
+        for (int i = 0; i < normOutNet.length; i++) {
+            System.out.println("normOutNet[" + i + "] = " + normOutNet[i]);
+        }
+        for (int i = 0; i < normReflec.length; i++) {
+            System.out.println("normReflec[" + i + "] = " + normReflec[i]);
+        }
     }
 
 }

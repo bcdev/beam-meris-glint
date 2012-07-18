@@ -112,8 +112,14 @@ public class FlintCorrection extends AbstractGlintCorrection {
 
         // atmoNetInput can also be used for aaNN
         double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
+        double[] autoRlTosa = new double[atmoNetOutput.length];
+        for (int i = 0; i < rlTosa.length; i++) {
+            autoRlTosa[i] = atmoNetOutput[i]/Math.PI;
+        }
+        glintResult.setAutoTosaReflec(autoRlTosa);
+
         if (!isFlintMode) {
-            computeError(rlTosa, atmoNetOutput, glintResult);
+            computeTosaQuality(rlTosa, atmoNetOutput, glintResult);
         }
 
         for (int i = 0; i < 12; i++) {
