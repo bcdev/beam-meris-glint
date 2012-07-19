@@ -472,6 +472,12 @@ public class GlintCorrectionOperator extends Operator {
                         GeoPos geoPos = geoCoding.getGeoPos(new PixelPos(pixelX + 0.5f, pixelY + 0.5f), null);
                         salinity = snTProvider.getSalinity(date, geoPos.getLat(), geoPos.getLon());
                         temperature = snTProvider.getTemperature(date, geoPos.getLat(), geoPos.getLon());
+                        if (Double.isNaN(salinity)) {
+                            salinity = averageSalinity;
+                        }
+                        if (Double.isNaN(temperature)) {
+                            temperature = averageTemperature;
+                        }
                     } else {
                         salinity = averageSalinity;
                         temperature = averageTemperature;
