@@ -3,6 +3,7 @@ package org.esa.beam.atmosphere.operator;
 import org.esa.beam.PixelData;
 import org.esa.beam.meris.radiometry.smilecorr.SmileCorrectionAuxdata;
 import org.esa.beam.nn.NNffbpAlphaTabFast;
+import org.esa.beam.nn.util.NeuralNetIOConverter;
 
 import java.util.Arrays;
 
@@ -96,9 +97,10 @@ public class GlintCorrection extends AbstractGlintCorrection {
         invAotAngNetInput[invAotAngNetInputIndex++] = xyz[2];
         invAotAngNetInput[invAotAngNetInputIndex++] = temperature;
         invAotAngNetInput[invAotAngNetInputIndex++] = salinity;
+
+        final double[] rTosa = NeuralNetIOConverter.multiplyPi(rlTosa); // rTosa = rlTosa * PI
         for (int i = 0; i < rlTosa.length; i++) {
-            final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
-            invAotAngNetInput[i + invAotAngNetInputIndex] = rTosa;
+            invAotAngNetInput[i + invAotAngNetInputIndex] = rTosa[i];
         }
         double[] invAotAngNetOutput = invAotAngNet.calc(invAotAngNetInput);
         final double aot560 = invAotAngNetOutput[0];
@@ -126,14 +128,10 @@ public class GlintCorrection extends AbstractGlintCorrection {
         autoAssocNetInput[autoAssocNetInputIndex++] = salinity;
 
         for (int i = 0; i < rlTosa.length; i++) {
-            final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
-            autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa;
+            autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa[i];
         }
         double[] autoAssocNetOutput = autoAssocNet.calc(autoAssocNetInput);
-        double[] autoRlTosa = new double[autoAssocNetOutput.length];
-        for (int i = 0; i < rlTosa.length; i++) {
-            autoRlTosa[i] = autoAssocNetOutput[i]/Math.PI;
-        }
+        double[] autoRlTosa = NeuralNetIOConverter.dividePi(autoAssocNetOutput);
         glintResult.setAutoTosaReflec(autoRlTosa);
 
         computeTosaQuality(rlTosa, autoAssocNetOutput, glintResult);
@@ -151,8 +149,7 @@ public class GlintCorrection extends AbstractGlintCorrection {
         atmoNetInput[atmoNetInputIndex++] = salinity;
 
         for (int i = 0; i < rlTosa.length; i++) {
-            final double rTosa = rlTosa[i] * Math.PI; // rTosa = rlTosa * PI
-            atmoNetInput[i + atmoNetInputIndex] = Math.log(rTosa);
+            atmoNetInput[i + atmoNetInputIndex] = rTosa[i];
         }
         double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
 
@@ -170,9 +167,8 @@ public class GlintCorrection extends AbstractGlintCorrection {
 
         // another new net from RD, 2012/07/06:  (31x47x37_1618.6.net, this changed again to rw_logrtosa. In this case, comment following lines)
         // another new net from RD, 2012/07/06:  (31x47x37_21434.7.net)
-        for (int i = 0; i < 12; i++) {
-            atmoNetOutput[i] = Math.exp(atmoNetOutput[i]);
-        }
+
+        atmoNetOutput = NeuralNetIOConverter.convertExponential(atmoNetOutput);
 
 //        final double[] transds = Arrays.copyOfRange(atmoNetOutput, 24, 36);
 //        glintResult.setTrans(transds);
@@ -182,21 +178,10 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
-            radiance2IrradianceFactor = Math.PI; // irradiance reflectance, comparable with MERIS
+            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
         } else {
-            radiance2IrradianceFactor = 1.0; // radiance reflectance
+            glintResult.setReflec(reflec);
         }
-        for (int i = 0; i < reflec.length; i++) {
-            // in the latest net, we do not have the paths any more (see above)
-//            if (deriveRwFromPath) {
-//                reflec[i] = deriveReflecFromPath(rwPaths[i], transds[i], rlTosa[i], cosTetaViewSurfRad,
-//                                                 cosTetaSunSurfRad, radiance2IrradianceFactor);
-//            } else {
-//                reflec[i] *= radiance2IrradianceFactor;
-//            }
-            reflec[i] *= radiance2IrradianceFactor;
-        }
-        glintResult.setReflec(reflec);
 
         // OLD normalization net
 //        if (normalizationNet != null) {
@@ -234,17 +219,13 @@ public class GlintCorrection extends AbstractGlintCorrection {
             normInNet[2] = aziViewSurf;       // new net 20120716
             normInNet[3] = temperature;       // new net 20120716
             normInNet[4] = salinity;
+            final double[] reflecPi = NeuralNetIOConverter.multiplyPi(reflec);
             for (int i = 0; i < 12; i++) {
 //                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
-                normInNet[i + 5] = Math.log(reflec[i] * Math.PI); // log(r), new net 20120716, r=l*PI
+                normInNet[i + 5] = Math.log(reflecPi[i]); // log(r), new net 20120716, r=l*PI
             }
             final double[] normOutNet = normalizationNet.calc(normInNet);
-            final double[] normReflec = new double[reflec.length];
-            for (int i = 0; i < 12; i++) {
-//                normReflec[i] = Math.exp(normOutNet[i]);
-//                normReflec[i] = Math.exp(normOutNet[i] / Math.PI); // rl=r/PI
-                normReflec[i] = Math.exp(normOutNet[i] - Math.log(Math.PI)); // rl = exp[log(r) - log(PI)] !!!!
-            }
+            final double[] normReflec = NeuralNetIOConverter.convertExponentialDividePi(normOutNet);
             glintResult.setNormReflec(normReflec);
             if (pixel.pixelX == 500 && pixel.pixelY == 150) {
                 writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
