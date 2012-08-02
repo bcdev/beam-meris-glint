@@ -183,54 +183,56 @@ public class GlintCorrection extends AbstractGlintCorrection {
             glintResult.setReflec(reflec);
         }
 
-        // OLD normalization net
+        //// OLD normalization net
+        if (normalizationNet != null) {
+            double[] normInNet = new double[15];
+//            double[] normInNet = new double[17];   // new net 20120716
+            normInNet[0] = tetaSunSurfDeg;
+            normInNet[1] = tetaViewSurfDeg;
+            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
+//            normInNet[2] = aziViewSurf;       // new net 20120716
+//            normInNet[3] = temperature;       // new net 20120716
+//            normInNet[4] = salinity;
+            for (int i = 0; i < 12; i++) {
+                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
+//                normInNet[i + 5] = Math.log(reflec[i]*Math.PI); // log(r), new net 20120716, r=l*PI
+            }
+            final double[] normOutNet = normalizationNet.calc(normInNet);
+            final double[] normReflec = new double[reflec.length];
+            for (int i = 0; i < 12; i++) {
+                normReflec[i] = Math.exp(normOutNet[i]);
+//                normReflec[i] = Math.exp(normOutNet[i]/Math.PI); // rl=r/PI
+            }
+            glintResult.setNormReflec(normReflec);
+//            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
+//                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
+//            }
+        }
+        //
+
+        // NEW normalization net
 //        if (normalizationNet != null) {
-//            double[] normInNet = new double[15];
-////            double[] normInNet = new double[17];   // new net 20120716
+////            double[] normInNet = new double[15];
+//            double[] normInNet = new double[17];   // new net 20120716
 //            normInNet[0] = tetaSunSurfDeg;
 //            normInNet[1] = tetaViewSurfDeg;
-//            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
-////            normInNet[2] = aziViewSurf;       // new net 20120716
-////            normInNet[3] = temperature;       // new net 20120716
-////            normInNet[4] = salinity;
+////            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
+//            normInNet[2] = aziViewSurf;       // new net 20120716
+//            normInNet[3] = temperature;       // new net 20120716
+//            normInNet[4] = salinity;
+//            final double[] reflecPi = NeuralNetIOConverter.multiplyPi(reflec);
 //            for (int i = 0; i < 12; i++) {
-//                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
-////                normInNet[i + 5] = Math.log(reflec[i]*Math.PI); // log(r), new net 20120716, r=l*PI
+////                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
+//                normInNet[i + 5] = Math.log(reflecPi[i]); // log(r), new net 20120716, r=l*PI
 //            }
 //            final double[] normOutNet = normalizationNet.calc(normInNet);
-//            final double[] normReflec = new double[reflec.length];
-//            for (int i = 0; i < 12; i++) {
-//                normReflec[i] = Math.exp(normOutNet[i]);
-////                normReflec[i] = Math.exp(normOutNet[i]/Math.PI); // rl=r/PI
-//            }
+//            final double[] normReflec = NeuralNetIOConverter.convertExponentialDividePi(normOutNet);
 //            glintResult.setNormReflec(normReflec);
 //            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
 //                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
 //            }
 //        }
-
-        // NEW normalization net
-        if (normalizationNet != null) {
-//            double[] normInNet = new double[15];
-            double[] normInNet = new double[17];   // new net 20120716
-            normInNet[0] = tetaSunSurfDeg;
-            normInNet[1] = tetaViewSurfDeg;
-//            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
-            normInNet[2] = aziViewSurf;       // new net 20120716
-            normInNet[3] = temperature;       // new net 20120716
-            normInNet[4] = salinity;
-            final double[] reflecPi = NeuralNetIOConverter.multiplyPi(reflec);
-            for (int i = 0; i < 12; i++) {
-//                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
-                normInNet[i + 5] = Math.log(reflecPi[i]); // log(r), new net 20120716, r=l*PI
-            }
-            final double[] normOutNet = normalizationNet.calc(normInNet);
-            final double[] normReflec = NeuralNetIOConverter.convertExponentialDividePi(normOutNet);
-            glintResult.setNormReflec(normReflec);
-            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
-                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
-            }
-        }
+        ////
 
         glintResult.setTau550(aot560);
         glintResult.setAngstrom(angstrom);
