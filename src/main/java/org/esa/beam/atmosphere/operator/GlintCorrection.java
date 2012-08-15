@@ -148,8 +148,10 @@ public class GlintCorrection extends AbstractGlintCorrection {
         atmoNetInput[atmoNetInputIndex++] = temperature;
         atmoNetInput[atmoNetInputIndex++] = salinity;
 
+        final double[] logRTosa = NeuralNetIOConverter.convertLogarithm(rTosa);
         for (int i = 0; i < rlTosa.length; i++) {
-            atmoNetInput[i + atmoNetInputIndex] = rTosa[i];
+//            atmoNetInput[i + atmoNetInputIndex] = rTosa[i];
+            atmoNetInput[i + atmoNetInputIndex] = logRTosa[i];    // for atmo_correct_meris/31x47x37_57596.9.net !!
         }
         double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
 

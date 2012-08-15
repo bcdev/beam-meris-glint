@@ -72,6 +72,11 @@ public class GlintCorrectionOperator extends Operator {
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INPUT_INVALID", AGC_FLAG_BAND_NAME);
 
+    // !!!!!!
+    // 'final' state at start of Coastcolour mass production (2012/08/02):
+    // use neural nets which were used on 2012/06/28 (new AC net 31x47x37_57596.9.net provided by RD on that day)
+    // !!!!!!
+
     // another new net from RD, 2012/07/06:  (changed again to rw_logrtosa)
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_1618.6.net";
     // another new net from RD, 2012/07/06:  (logrw_logrtosa)
@@ -90,9 +95,10 @@ public class GlintCorrectionOperator extends Operator {
     // new net from RD, 2012/07/16:
 //    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/23x17_29.6.net";
 
-//    public static final String ATMO_AANN_NET = "atmo_aann/21x5x21_20.4.net";
+    // finally, switched back to the old AANN NET (2012/08/02)
+    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_20.4.net";
     // new net from RD, 2012/07/16:
-    public static final String ATMO_AANN_NET_NAME = "atmo_aann/23x5x23_96.0.net";
+//    public static final String ATMO_AANN_NET_NAME = "atmo_aann/23x5x23_96.0.net";
 
     private static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
