@@ -25,6 +25,7 @@ public class PixelData {
     public double pressure;     /* Surface pressure in hPa	    	   	*/
     public double ozone;        /* Total ozone concentration in DU		*/
     public int l1Flag;          /* Flags of the L1b product     */
+    public int l1pFlag;          /* Flags of the L1p product (optional)    */
     public int validation;
     public int detectorIndex;
 

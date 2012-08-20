@@ -135,8 +135,17 @@ public class GlintCorrection extends AbstractGlintCorrection {
         glintResult.setAutoTosaReflec(autoRlTosa);
 
         computeTosaQuality(rlTosa, autoAssocNetOutput, glintResult);
-        if (glintResult.getTosaQualityIndicator() > tosaOosThresh) {
+        final double tosaQualityIndicator = glintResult.getTosaQualityIndicator();
+        if (tosaQualityIndicator > tosaOosThresh) {
             glintResult.raiseFlag(TOSA_OOS);
+        }
+
+        if (isL2RInvalid(pixel, tosaQualityIndicator)) {
+            glintResult.raiseFlag(L2R_INVALID);
+        }
+
+        if (isL2RSuspect(pixel, tosaQualityIndicator)) {
+            glintResult.raiseFlag(L2R_SUSPECT);
         }
 
         int atmoNetInputIndex = 0;
@@ -245,6 +254,18 @@ public class GlintCorrection extends AbstractGlintCorrection {
         glintResult.setAtot(Double.NaN);
 
         return glintResult;
+    }
+
+    private boolean isL2RInvalid(PixelData pixel, double tosaQualityIndicator) {
+        final boolean isCloud = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BIT_INDEX)) != 0;
+        return tosaQualityIndicator > 3.0 && isCloud;
+    }
+
+    private boolean isL2RSuspect(PixelData pixel, double tosaQualityIndicator) {
+        final boolean isCloudBuffer = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BUFFER_BIT_INDEX)) != 0;
+        final boolean isCloudShadow = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_SHADOW_BIT_INDEX)) != 0;
+        final boolean isMixedPixel = (pixel.l1pFlag & (1 << GlintCorrectionOperator.MIXEDPIXEL_BIT_INDEX)) != 0;
+        return tosaQualityIndicator > 1.0 && (isCloudBuffer || isCloudShadow || isMixedPixel);
     }
 
     private void writeDebugOutput(PixelData pixel, double[] normInNet, double[] normOutNet, double[] reflec, double[] normReflec, double aziDiffSurfDeg) {

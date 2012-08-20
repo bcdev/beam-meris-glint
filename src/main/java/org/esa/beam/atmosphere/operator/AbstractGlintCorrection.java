@@ -27,10 +27,12 @@ abstract class AbstractGlintCorrection {
     static final int TOSA_OOS = 0x20;
     static final int SOLZEN = 0x40;
     static final int ANCIL = 0x80;
-    static final int SUNGLINT = 0x81;
-    static final int HAS_FLINT = 0x100;
-    static final int REFL_INVALID = 0x4000;  // todo: define when to raise
-    static final int INPUT_INVALID = 0x8000;  // LAND || CLOUD_ICE || l1_flags.INVALID
+    static final int SUNGLINT = 0x100;
+    static final int HAS_FLINT = 0x200;
+    static final int REFL_INVALID = 0x400;  // todo: define when to raise
+    static final int INPUT_INVALID = 0x800;  // LAND || CLOUD_ICE || l1_flags.INVALID
+    static final int L2R_INVALID = 0x1000;  // quality indicator > 3 || 100% clouds
+    static final int L2R_SUSPECT = 0x2000;  // quality indicator > 1 || cloud/buffer/shadow || mixed pixel
 
     static final int L1_INVALID_FLAG = 0x80;
 
@@ -114,7 +116,7 @@ abstract class AbstractGlintCorrection {
             logAutoRlTosa[i] = Math.log(autoRTosa[i]/Math.PI);
         }
         final double chi_square = getChiSqrFromLargestDiffs(logRlTosa, logAutoRlTosa, 4);
-        glintResult.setTosaQualityIndicator(chi_square);
+        glintResult.setTosaQualityIndicator(chi_square*1.E4);
     }
 
     /**

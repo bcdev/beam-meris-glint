@@ -68,7 +68,16 @@ public class GlintCorrectionOperator extends Operator {
 
     public static final String GLINT_CORRECTION_VERSION = "1.4-CC";
 
-    private static final String AGC_FLAG_BAND_NAME = "agc_flags";
+    public static final int COASTLINE_BIT_INDEX = 1;
+    public static final int CLOUD_BIT_INDEX = 2;
+    public static final int CLOUD_AMBIGUOUS_BIT_INDEX = 3;
+    public static final int CLOUD_BUFFER_BIT_INDEX = 4;
+    public static final int CLOUD_SHADOW_BIT_INDEX = 5;
+    public static final int SNOW_ICE_BIT_INDEX = 6;
+    public static final int MIXEDPIXEL_BIT_INDEX = 7;
+    public static final int GLINTRISK_BIT_INDEX = 8;
+
+    public static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INPUT_INVALID", AGC_FLAG_BAND_NAME);
 
@@ -100,7 +109,7 @@ public class GlintCorrectionOperator extends Operator {
     // new net from RD, 2012/07/16:
 //    public static final String ATMO_AANN_NET_NAME = "atmo_aann/23x5x23_96.0.net";
 
-    private static final String[] REQUIRED_MERIS_TPG_NAMES = {
+    public static final String[] REQUIRED_MERIS_TPG_NAMES = {
             MERIS_SUN_ZENITH_DS_NAME,
             MERIS_SUN_AZIMUTH_DS_NAME,
             MERIS_VIEW_ZENITH_DS_NAME,
@@ -110,24 +119,24 @@ public class GlintCorrectionOperator extends Operator {
             "ozone",
     };
 
-    private static final String[] REQUIRED_AATSR_TPG_NAMES = AATSR_TIE_POINT_GRID_NAMES;
+    public static final String[] REQUIRED_AATSR_TPG_NAMES = AATSR_TIE_POINT_GRID_NAMES;
 
-    private static final String ANG_443_865 = "ang_443_865";
-    private static final String TAU_550 = "tau_550";
-    private static final String TAU_778 = "tau_778";
-    private static final String TAU_865 = "tau_865";
-    private static final String GLINT_RATIO = "glint_ratio";
-    private static final String FLINT_VALUE = "flint_value";
-    private static final String BTSM = "b_tsm";
-    private static final String ATOT = "a_tot";
-    private static final String[] TOSA_REFLEC_BAND_NAMES = {
+    public static final String ANG_443_865 = "ang_443_865";
+    public static final String TAU_550 = "tau_550";
+    public static final String TAU_778 = "tau_778";
+    public static final String TAU_865 = "tau_865";
+    public static final String GLINT_RATIO = "glint_ratio";
+    public static final String FLINT_VALUE = "flint_value";
+    public static final String BTSM = "b_tsm";
+    public static final String ATOT = "a_tot";
+    public static final String[] TOSA_REFLEC_BAND_NAMES = {
             "tosa_reflec_1", "tosa_reflec_2", "tosa_reflec_3", "tosa_reflec_4", "tosa_reflec_5",
             "tosa_reflec_6", "tosa_reflec_7", "tosa_reflec_8", "tosa_reflec_9", "tosa_reflec_10",
             null,
             "tosa_reflec_12", "tosa_reflec_13",
             null, null
     };
-    private static final String[] AUTO_TOSA_REFLEC_BAND_NAMES = {
+    public static final String[] AUTO_TOSA_REFLEC_BAND_NAMES = {
             "tosa_reflec_auto_1", "tosa_reflec_auto_2", "tosa_reflec_auto_3", "tosa_reflec_auto_4",
             "tosa_reflec_auto_5", "tosa_reflec_auto_6", "tosa_reflec_auto_7", "tosa_reflec_auto_8",
             "tosa_reflec_auto_9", "tosa_reflec_auto_10",
@@ -135,29 +144,29 @@ public class GlintCorrectionOperator extends Operator {
             "tosa_reflec_auto_12", "tosa_reflec_auto_13",
             null, null
     };
-    private static final String TOSA_QUALITY_INDICATOR_BAND_NAME = "tosa_quality_indicator";
-    private static final String[] REFLEC_BAND_NAMES = {
+    public static final String QUALITY_INDICATOR_BAND_NAME = "quality_indicator";
+    public static final String[] REFLEC_BAND_NAMES = {
             "reflec_1", "reflec_2", "reflec_3", "reflec_4", "reflec_5",
             "reflec_6", "reflec_7", "reflec_8", "reflec_9", "reflec_10",
             null,
             "reflec_12", "reflec_13",
             null, null
     };
-    private static final String[] NORM_REFLEC_BAND_NAMES = {
+    public static final String[] NORM_REFLEC_BAND_NAMES = {
             "norm_refl_1", "norm_refl_2", "norm_refl_3", "norm_refl_4", "norm_refl_5",
             "norm_refl_6", "norm_refl_7", "norm_refl_8", "norm_refl_9", "norm_refl_10",
             null,
             "norm_refl_12", "norm_refl_13",
             null, null
     };
-    private static final String[] PATH_BAND_NAMES = {
+    public static final String[] PATH_BAND_NAMES = {
             "path_1", "path_2", "path_3", "path_4", "path_5",
             "path_6", "path_7", "path_8", "path_9", "path_10",
             null,
             "path_12", "path_13",
             null, null
     };
-    private static final String[] TRANS_BAND_NAMES = {
+    public static final String[] TRANS_BAND_NAMES = {
             "trans_1", "trans_2", "trans_3", "trans_4", "trans_5",
             "trans_6", "trans_7", "trans_8", "trans_9", "trans_10",
             null,
@@ -285,6 +294,7 @@ public class GlintCorrectionOperator extends Operator {
     private String atmoAaNeuralNetString;
     private SmileCorrectionAuxdata smileAuxData;
     private RasterDataNode l1FlagsNode;
+    private RasterDataNode l1pFlagsNode;
     private RasterDataNode solzenNode;
     private RasterDataNode solaziNode;
     private RasterDataNode satzenNode;
@@ -328,6 +338,7 @@ public class GlintCorrectionOperator extends Operator {
         }
 
         l1FlagsNode = merisProduct.getRasterDataNode(MERIS_L1B_FLAGS_DS_NAME);
+        l1pFlagsNode = merisProduct.getRasterDataNode(MERIS_L1B_FLAGS_DS_NAME);
         solzenNode = merisProduct.getRasterDataNode(MERIS_SUN_ZENITH_DS_NAME);
         solaziNode = merisProduct.getRasterDataNode(MERIS_SUN_AZIMUTH_DS_NAME);
         satzenNode = merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME);
@@ -591,7 +602,7 @@ public class GlintCorrectionOperator extends Operator {
             fillTargetSample(TOSA_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getTosaReflec());
         }
         if (outputTosa || outputTosaQualityIndicator) {
-            final ProductData quality = targetSampleData.get(TOSA_QUALITY_INDICATOR_BAND_NAME);
+            final ProductData quality = targetSampleData.get(QUALITY_INDICATOR_BAND_NAME);
             quality.setElemDoubleAt(pixelIndex, glintResult.getTosaQualityIndicator());
         }
         if (outputAutoTosa) {
@@ -631,6 +642,10 @@ public class GlintCorrectionOperator extends Operator {
         pixelData.nadirColumnIndex = nadirColumnIndex;
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
         pixelData.l1Flag = sourceTileMap.get(MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
+        final ProductData l1p_flags = sourceTileMap.get("l1p_flags");
+        if (l1p_flags != null) {
+            pixelData.l1pFlag = l1p_flags.getElemIntAt(index);
+        }
         pixelData.detectorIndex = sourceTileMap.get(MERIS_DETECTOR_INDEX_DS_NAME).getElemIntAt(index);
 
         pixelData.solzen = getScaledValue(sourceTileMap, solzenNode, index);
@@ -667,6 +682,11 @@ public class GlintCorrectionOperator extends Operator {
         final Tile l1FlagTile = getSourceTile(l1FlagsNode, targetRectangle);
         map.put(l1FlagTile.getRasterDataNode().getName(), l1FlagTile.getRawSamples());
 
+        if (l1pFlagsNode != null) {
+            final Tile l1pFlagTile = getSourceTile(l1pFlagsNode, targetRectangle);
+            map.put(l1pFlagTile.getRasterDataNode().getName(), l1pFlagTile.getRawSamples());
+        }
+
         final Tile solzenTile = getSourceTile(solzenNode, targetRectangle);
         map.put(solzenTile.getRasterDataNode().getName(), solzenTile.getRawSamples());
 
@@ -698,7 +718,7 @@ public class GlintCorrectionOperator extends Operator {
         return map;
     }
 
-    private static FlagCoding createAgcFlagCoding() {
+    public static FlagCoding createAgcFlagCoding() {
         final FlagCoding flagCoding = new FlagCoding(AGC_FLAG_BAND_NAME);
         flagCoding.setDescription("Atmosphere Correction - Flag Coding");
 
@@ -715,8 +735,14 @@ public class GlintCorrectionOperator extends Operator {
                          GlintCorrection.HAS_FLINT);
         addFlagAttribute(flagCoding, "REFL_INVALID", "spare flag (TBD)",
                          GlintCorrection.REFL_INVALID);
-        addFlagAttribute(flagCoding, "INPUT_INVALID", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+        addFlagAttribute(flagCoding, "INPUT_INVALID", "Invalid input pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                          GlintCorrection.INPUT_INVALID);
+        addFlagAttribute(flagCoding, "L2R_INVALID",
+                         "'L2R invalid' pixels (quality indicator > 3 && CLOUD)",
+                         GlintCorrection.L2R_INVALID);
+        addFlagAttribute(flagCoding, "L2R_SUSPECT",
+                         "'L2R suspect' pixels (quality indicator > 1 && (CLOUD_SHADOW || CLOUD_BUFFER || MIXED_PIXEL)",
+                         GlintCorrection.L2R_SUSPECT);
 
         return flagCoding;
     }
@@ -784,7 +810,7 @@ public class GlintCorrectionOperator extends Operator {
         tau865.setSpectralWavelength(865);
 
         if (outputTosa || outputTosaQualityIndicator) {
-            addNonSpectralTargetBand(product, TOSA_QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
+            addNonSpectralTargetBand(product, QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
                                      "dl");
         }
 
@@ -819,7 +845,7 @@ public class GlintCorrectionOperator extends Operator {
         }
     }
 
-    private static void addAgcMasks(Product product) {
+    public static void addAgcMasks(Product product) {
         final ProductNodeGroup<Mask> maskGroup = product.getMaskGroup();
         maskGroup.add(createMask(product, "agc_land", "Land pixels", "agc_flags.LAND", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "cloud_ice", "Cloud or ice pixels", "agc_flags.CLOUD_ICE",
@@ -838,6 +864,10 @@ public class GlintCorrectionOperator extends Operator {
                                  "agc_flags.REFL_INVALID", Color.GREEN, 0.5f));
         maskGroup.add(createMask(product, "agc_invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                                  "agc_flags.INPUT_INVALID", Color.RED, 0.5f));
+        maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 3 && CLOUD)",
+                                 "agc_flags.L2R_INVALID", Color.BLACK, 0.5f));
+        maskGroup.add(createMask(product, "l2r_suspect", "'L2R invalid' pixels (quality indicator > 3 && CLOUD)",
+                                 "agc_flags.L2R_SUSPECT", new Color(255, 204, 0), 0.5f));
     }
 
     private static Mask createMask(Product product, String name, String description, String expression, Color color,
