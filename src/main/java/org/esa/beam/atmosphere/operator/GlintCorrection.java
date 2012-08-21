@@ -258,14 +258,17 @@ public class GlintCorrection extends AbstractGlintCorrection {
 
     private boolean isL2RInvalid(PixelData pixel, double tosaQualityIndicator) {
         final boolean isCloud = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BIT_INDEX)) != 0;
-        return tosaQualityIndicator > 3.0 && isCloud;
+        return tosaQualityIndicator > 1.0 || isCloud;
     }
 
     private boolean isL2RSuspect(PixelData pixel, double tosaQualityIndicator) {
+        final boolean isCloud = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BIT_INDEX)) != 0;
         final boolean isCloudBuffer = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BUFFER_BIT_INDEX)) != 0;
         final boolean isCloudShadow = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_SHADOW_BIT_INDEX)) != 0;
+        final boolean isSnowIce = (pixel.l1pFlag & (1 << GlintCorrectionOperator.SNOW_ICE_BIT_INDEX)) != 0;
         final boolean isMixedPixel = (pixel.l1pFlag & (1 << GlintCorrectionOperator.MIXEDPIXEL_BIT_INDEX)) != 0;
-        return tosaQualityIndicator > 1.0 && (isCloudBuffer || isCloudShadow || isMixedPixel);
+        return tosaQualityIndicator > 3.0 ||
+                (isCloud || isCloudBuffer || isCloudShadow || isSnowIce || isMixedPixel);
     }
 
     private void writeDebugOutput(PixelData pixel, double[] normInNet, double[] normOutNet, double[] reflec, double[] normReflec, double aziDiffSurfDeg) {

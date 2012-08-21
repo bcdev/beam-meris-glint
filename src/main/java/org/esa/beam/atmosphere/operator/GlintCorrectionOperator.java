@@ -77,6 +77,7 @@ public class GlintCorrectionOperator extends Operator {
     public static final int MIXEDPIXEL_BIT_INDEX = 7;
     public static final int GLINTRISK_BIT_INDEX = 8;
 
+    public static final String L1P_FLAG_BAND_NAME = "l1p_flags";
     public static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
     private static final String VALID_EXPRESSION = String.format("!%s.INPUT_INVALID", AGC_FLAG_BAND_NAME);
@@ -337,8 +338,8 @@ public class GlintCorrectionOperator extends Operator {
             validateFlintProduct(flintProduct);
         }
 
+        l1pFlagsNode = merisProduct.getRasterDataNode(L1P_FLAG_BAND_NAME);
         l1FlagsNode = merisProduct.getRasterDataNode(MERIS_L1B_FLAGS_DS_NAME);
-        l1pFlagsNode = merisProduct.getRasterDataNode(MERIS_L1B_FLAGS_DS_NAME);
         solzenNode = merisProduct.getRasterDataNode(MERIS_SUN_ZENITH_DS_NAME);
         solaziNode = merisProduct.getRasterDataNode(MERIS_SUN_AZIMUTH_DS_NAME);
         satzenNode = merisProduct.getRasterDataNode(MERIS_VIEW_ZENITH_DS_NAME);
@@ -642,7 +643,7 @@ public class GlintCorrectionOperator extends Operator {
         pixelData.nadirColumnIndex = nadirColumnIndex;
         pixelData.validation = sourceTileMap.get(validationBand.getName()).getElemIntAt(index);
         pixelData.l1Flag = sourceTileMap.get(MERIS_L1B_FLAGS_DS_NAME).getElemIntAt(index);
-        final ProductData l1p_flags = sourceTileMap.get("l1p_flags");
+        final ProductData l1p_flags = sourceTileMap.get(L1P_FLAG_BAND_NAME);
         if (l1p_flags != null) {
             pixelData.l1pFlag = l1p_flags.getElemIntAt(index);
         }
@@ -862,11 +863,12 @@ public class GlintCorrectionOperator extends Operator {
                                  Color.RED, 0.5f));
         maskGroup.add(createMask(product, "refl_invalid", "spare flag (TBD)",
                                  "agc_flags.REFL_INVALID", Color.GREEN, 0.5f));
-        maskGroup.add(createMask(product, "agc_invalid", "Invalid pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
+        maskGroup.add(createMask(product, "agc_invalid", "'AGC invalid' pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                                  "agc_flags.INPUT_INVALID", Color.RED, 0.5f));
-        maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 3 && CLOUD)",
+        maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 1 || CLOUD)",
                                  "agc_flags.L2R_INVALID", Color.BLACK, 0.5f));
-        maskGroup.add(createMask(product, "l2r_suspect", "'L2R invalid' pixels (quality indicator > 3 && CLOUD)",
+        maskGroup.add(createMask(product, "l2r_suspect", "'L2R suspect' pixels " +
+                "(quality indicator > 3 && (CLOUD || CLOUD_BUFFER || CLOUD_SHADOW || SNOW_ICE || MIXED_PIXEL))",
                                  "agc_flags.L2R_SUSPECT", new Color(255, 204, 0), 0.5f));
     }
 
