@@ -94,7 +94,9 @@ public class GlintCorrectionOperator extends Operator {
     // another new net from RD, 2012/06/28: more training!!!
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_29804.7.net";
     // another new net from RD, 2012/10/01: less "Rauschen" :-)
-    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_120805.4.net";
+//    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_120805.4.net";
+    // another new net from RD, 2012/11/28:
+    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_134765.0.net";
     // another new net from RD, 2012/06/28:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_57596.9.net";
     // another new net from RD, 2012/06/18:
