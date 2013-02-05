@@ -217,7 +217,7 @@ public class GlintCorrectionOperator extends Operator {
                description = "Toggles the output of water leaving reflectance.")
     private boolean outputReflec;
 
-    @Parameter(defaultValue = "RADIANCE_REFLECTANCES", valueSet = {"RADIANCE_REFLECTANCES", "IRRADIANCE_REFLECTANCES"},
+    @Parameter(defaultValue = "IRRADIANCE_REFLECTANCES", valueSet = {"RADIANCE_REFLECTANCES", "IRRADIANCE_REFLECTANCES"},
                label = "Output water leaving reflectance as",
                description = "Select if reflectances shall be written as radiances or irradiances. " +
                        "The irradiances are compatible with standard MERIS product.")
@@ -867,10 +867,10 @@ public class GlintCorrectionOperator extends Operator {
                                  Color.RED, 0.5f));
         maskGroup.add(createMask(product, "agc_invalid", "'AGC invalid' pixels (LAND || CLOUD_ICE || l1_flags.INVALID)",
                                  "agc_flags.INPUT_INVALID", Color.RED, 0.5f));
-        maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 1 || CLOUD)",
+        maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 3 || CLOUD)",
                                  "agc_flags.L2R_INVALID", Color.BLACK, 0.5f));
         maskGroup.add(createMask(product, "l2r_suspect", "'L2R suspect' pixels " +
-                "(quality indicator > 3 && (CLOUD || CLOUD_BUFFER || CLOUD_SHADOW || SNOW_ICE || MIXED_PIXEL))",
+                "(quality indicator > 1 && (CLOUD || CLOUD_BUFFER || CLOUD_SHADOW || SNOW_ICE || MIXED_PIXEL))",
                                  "agc_flags.L2R_SUSPECT", new Color(255, 204, 0), 0.5f));
     }
 

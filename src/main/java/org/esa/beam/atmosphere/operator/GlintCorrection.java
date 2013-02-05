@@ -189,9 +189,12 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
-            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
-        } else {
+            // changed on 20130205, as we now get IRRADIANCES as output from the net!
+//            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
             glintResult.setReflec(reflec);
+//        } else {
+//            glintResult.setReflec(reflec);
+            glintResult.setReflec(NeuralNetIOConverter.dividePi(reflec));
         }
 
         //// OLD normalization net
@@ -258,7 +261,7 @@ public class GlintCorrection extends AbstractGlintCorrection {
 
     private boolean isL2RInvalid(PixelData pixel, double tosaQualityIndicator) {
         final boolean isCloud = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_BIT_INDEX)) != 0;
-        return tosaQualityIndicator > 1.0 || isCloud;
+        return tosaQualityIndicator > 3.0 || isCloud;
     }
 
     private boolean isL2RSuspect(PixelData pixel, double tosaQualityIndicator) {
@@ -267,7 +270,7 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final boolean isCloudShadow = (pixel.l1pFlag & (1 << GlintCorrectionOperator.CLOUD_SHADOW_BIT_INDEX)) != 0;
         final boolean isSnowIce = (pixel.l1pFlag & (1 << GlintCorrectionOperator.SNOW_ICE_BIT_INDEX)) != 0;
         final boolean isMixedPixel = (pixel.l1pFlag & (1 << GlintCorrectionOperator.MIXEDPIXEL_BIT_INDEX)) != 0;
-        return tosaQualityIndicator > 3.0 ||
+        return tosaQualityIndicator > 1.0 ||
                 (isCloud || isCloudBuffer || isCloudShadow || isSnowIce || isMixedPixel);
     }
 
