@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.4.2-CC</version>
+    <version>1.4.3-CC</version>
     <name>MERIS Glint Correction</name>
 
     <description>
