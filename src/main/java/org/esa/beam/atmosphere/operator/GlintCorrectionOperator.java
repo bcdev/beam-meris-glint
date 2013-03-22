@@ -162,10 +162,10 @@ public class GlintCorrectionOperator extends Operator {
             null, null
     };
     public static final String[] NORM_REFLEC_BAND_NAMES = {
-            "norm_refl_1", "norm_refl_2", "norm_refl_3", "norm_refl_4", "norm_refl_5",
-            "norm_refl_6", "norm_refl_7", "norm_refl_8", "norm_refl_9", "norm_refl_10",
+            "norm_reflec_1", "norm_reflec_2", "norm_reflec_3", "norm_reflec_4", "norm_reflec_5",
+            "norm_reflec_6", "norm_reflec_7", "norm_reflec_8", "norm_reflec_9", "norm_reflec_10",
             null,
-            "norm_refl_12", "norm_refl_13",
+            "norm_reflec_12", "norm_reflec_13",
             null, null
     };
     public static final String[] PATH_BAND_NAMES = {
@@ -624,7 +624,7 @@ public class GlintCorrectionOperator extends Operator {
         if (outputNormReflec) {
             fillTargetSample(NORM_REFLEC_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getNormReflec());
         }
-        if (outputPath) {
+        if (outputPath && useFlint) {
             fillTargetSample(PATH_BAND_NAMES, pixelIndex, targetSampleData, glintResult.getPath());
         }
         if (outputTransmittance) {
@@ -788,9 +788,9 @@ public class GlintCorrectionOperator extends Operator {
         if (outputNormReflec) {
             String descriptionPattern = "Normalised water leaving radiance reflectance at {0} nm";
             addSpectralTargetBands(product, NORM_REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
-            groupList.add("norm_refl");
+            groupList.add("norm_reflec");
         }
-        if (outputPath) {
+        if (outputPath && useFlint) {
             addSpectralTargetBands(product, PATH_BAND_NAMES, "Water leaving radiance reflectance path at {0} nm",
                                    "dxd");
             groupList.add("path");

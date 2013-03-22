@@ -177,7 +177,8 @@ abstract class AbstractGlintCorrection {
         double[] inmax = atmosphereNet.getInmax();
         double[] inmin = atmosphereNet.getInmin();
         for (int i = 0; i < tosaRefl.length; i++) {
-            double currentRlTosa = Math.log(tosaRefl[i]);
+//            double currentRlTosa = Math.log(tosaRefl[i]);
+            double currentRlTosa = Math.log(Math.PI*tosaRefl[i]);
             if (currentRlTosa > inmax[i + tosaOffset] || currentRlTosa < inmin[i + tosaOffset]) {
                 return false;
             }

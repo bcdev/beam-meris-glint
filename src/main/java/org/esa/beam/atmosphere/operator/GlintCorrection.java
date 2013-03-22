@@ -50,11 +50,6 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final double tetaSunSurfRad = Math.toRadians(tetaSunSurfDeg);
         final double aziDiffSurfDeg = getAzimuthDifference(pixel);
         final double aziDiffSurfRad = Math.toRadians(aziDiffSurfDeg);
-        final double cosTetaViewSurfRad = Math.cos(tetaViewSurfRad);
-        final double cosTetaSunSurfRad = Math.cos(tetaSunSurfRad);
-
-        final double aziViewSurf = pixel.satazi;
-        final double aziSunSurf = pixel.solazi;
 
         double[] xyz = computeXYZCoordinates(tetaViewSurfRad, aziDiffSurfRad);
 
@@ -83,7 +78,6 @@ public class GlintCorrection extends AbstractGlintCorrection {
         final double[] rlTosa = tosa.perform(pixel, tetaViewSurfRad, tetaSunSurfRad);
         glintResult.setTosaReflec(rlTosa.clone());
 
-//        boolean isFlintMode = isFlintValueValid(pixel.flintValue);
         /* test if tosa reflectances are out of training range */
         if (!isTosaReflectanceValid(rlTosa, atmosphereNet, false)) {
             glintResult.raiseFlag(TOSA_OOR);
@@ -159,94 +153,37 @@ public class GlintCorrection extends AbstractGlintCorrection {
 
         final double[] logRTosa = NeuralNetIOConverter.convertLogarithm(rTosa);
         for (int i = 0; i < rlTosa.length; i++) {
-//            atmoNetInput[i + atmoNetInputIndex] = rTosa[i];
             atmoNetInput[i + atmoNetInputIndex] = logRTosa[i];    // for atmo_correct_meris/31x47x37_57596.9.net !!
         }
-        double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);
-
-        for (int i = 0; i < 12; i++) {
-            // i=0,..,23: now linear output
-//            atmoNetOutput[i] = Math.exp(atmoNetOutput[i]);
-//            atmoNetOutput[i + 12] = Math.exp(atmoNetOutput[i + 12]);
-            // i=24,..,35: output now transmittance, not edBoa
-//            atmoNetOutput[i + 24] = Math.exp(
-//                    atmoNetOutput[i + 24]) / cosTetaSunSurfRad; //outnet is Ed_boa, not transmittance
-        }
-        // another new net, 2012/06/08: output changed again to log... :-)
-        // also, we have only 12 outputs (log_rw),
-        // we do not have the rho_path, t_down, t_up any more (RD: "we don't need them")
-
-        // another new net from RD, 2012/07/06:  (31x47x37_1618.6.net, this changed again to rw_logrtosa. In this case, comment following lines)
-        // another new net from RD, 2012/07/06:  (31x47x37_21434.7.net)
+        double[] atmoNetOutput = atmosphereNet.calc(atmoNetInput);  // log_rw from 37x77x97_100157.4.net
 
         atmoNetOutput = NeuralNetIOConverter.convertExponential(atmoNetOutput);
 
-//        final double[] transds = Arrays.copyOfRange(atmoNetOutput, 24, 36);
-//        glintResult.setTrans(transds);
-//        final double[] rwPaths = Arrays.copyOfRange(atmoNetOutput, 12, 24);
-//        glintResult.setPath(rwPaths);
-//        final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
-        double radiance2IrradianceFactor;
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
-            // changed on 20130205, as we now get IRRADIANCES as output from the net!
-//            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
             glintResult.setReflec(reflec);
-//        } else {
-//            glintResult.setReflec(reflec);
-            glintResult.setReflec(NeuralNetIOConverter.dividePi(reflec));
+            // changed on 20130321, current net 37x77x97_100157.4 gives rw, so multiply with PI (see mail from CB, 20130320)!
+//            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
+        } else {
+            glintResult.setReflec(reflec);
         }
 
-        //// OLD normalization net
         if (normalizationNet != null) {
             double[] normInNet = new double[15];
-//            double[] normInNet = new double[17];   // new net 20120716
             normInNet[0] = tetaSunSurfDeg;
             normInNet[1] = tetaViewSurfDeg;
             normInNet[2] = aziDiffSurfDeg;  // new net 20120716
-//            normInNet[2] = aziViewSurf;       // new net 20120716
-//            normInNet[3] = temperature;       // new net 20120716
-//            normInNet[4] = salinity;
             for (int i = 0; i < 12; i++) {
-                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
-//                normInNet[i + 5] = Math.log(reflec[i]*Math.PI); // log(r), new net 20120716, r=l*PI
+                normInNet[i + 3] = Math.log(reflec[i] * Math.PI); // log_rlw into 90_2.8.net
             }
             final double[] normOutNet = normalizationNet.calc(normInNet);
             final double[] normReflec = new double[reflec.length];
             for (int i = 0; i < 12; i++) {
-                normReflec[i] = Math.exp(normOutNet[i]);
-//                normReflec[i] = Math.exp(normOutNet[i]/Math.PI); // rl=r/PI
+//                normReflec[i] = Math.exp(normOutNet[i]);
+                normReflec[i] = Math.exp(normOutNet[i])/Math.PI;   // norm reflec must be WITHOUT PI (see mail from CB, 20130320)!
             }
             glintResult.setNormReflec(normReflec);
-//            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
-//                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
-//            }
         }
-        //
-
-        // NEW normalization net
-//        if (normalizationNet != null) {
-////            double[] normInNet = new double[15];
-//            double[] normInNet = new double[17];   // new net 20120716
-//            normInNet[0] = tetaSunSurfDeg;
-//            normInNet[1] = tetaViewSurfDeg;
-////            normInNet[2] = aziDiffSurfDeg;  // new net 20120716
-//            normInNet[2] = aziViewSurf;       // new net 20120716
-//            normInNet[3] = temperature;       // new net 20120716
-//            normInNet[4] = salinity;
-//            final double[] reflecPi = NeuralNetIOConverter.multiplyPi(reflec);
-//            for (int i = 0; i < 12; i++) {
-////                normInNet[i + 3] = Math.log(reflec[i]); // log(rl)
-//                normInNet[i + 5] = Math.log(reflecPi[i]); // log(r), new net 20120716, r=l*PI
-//            }
-//            final double[] normOutNet = normalizationNet.calc(normInNet);
-//            final double[] normReflec = NeuralNetIOConverter.convertExponentialDividePi(normOutNet);
-//            glintResult.setNormReflec(normReflec);
-//            if (pixel.pixelX == 500 && pixel.pixelY == 150) {
-//                writeDebugOutput(pixel, normInNet, normOutNet, reflec, normReflec, aziDiffSurfDeg);
-//            }
-//        }
-        ////
 
         glintResult.setTau550(aot560);
         glintResult.setAngstrom(angstrom);
