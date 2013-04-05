@@ -94,7 +94,9 @@ public class GlintCorrection extends AbstractGlintCorrection {
 
         final double[] rTosa = NeuralNetIOConverter.multiplyPi(rlTosa); // rTosa = rlTosa * PI
         for (int i = 0; i < rlTosa.length; i++) {
-            invAotAngNetInput[i + invAotAngNetInputIndex] = rTosa[i];
+//            invAotAngNetInput[i + invAotAngNetInputIndex] = rTosa[i];
+            //  new net '97x77x37_326185.2.net', 20130325:
+            invAotAngNetInput[i + invAotAngNetInputIndex] = Math.log(rTosa[i]);
         }
         double[] invAotAngNetOutput = invAotAngNet.calc(invAotAngNetInput);
         final double aot560 = invAotAngNetOutput[0];
@@ -122,13 +124,20 @@ public class GlintCorrection extends AbstractGlintCorrection {
         autoAssocNetInput[autoAssocNetInputIndex++] = salinity;
 
         for (int i = 0; i < rlTosa.length; i++) {
-            autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa[i];
+//            autoAssocNetInput[i + autoAssocNetInputIndex] = rTosa[i];
+            //  new net '21x5x21_643.4.net', 20130325:
+            autoAssocNetInput[i + autoAssocNetInputIndex] = Math.log(rTosa[i]);
         }
         double[] autoAssocNetOutput = autoAssocNet.calc(autoAssocNetInput);
-        double[] autoRlTosa = NeuralNetIOConverter.dividePi(autoAssocNetOutput);
+//        double[] autoRlTosa = NeuralNetIOConverter.dividePi(autoAssocNetOutput);
+        //  new net '21x5x21_643.4.net', 20130325:
+        double[] autoRlTosa = NeuralNetIOConverter.convertExponentialDividePi(invAotAngNetOutput);
         glintResult.setAutoTosaReflec(autoRlTosa);
 
-        computeTosaQuality(rlTosa, autoAssocNetOutput, glintResult);
+        double[] expAutoAssocNetOutput = NeuralNetIOConverter.convertExponential(autoAssocNetOutput);
+//        computeTosaQuality(rlTosa, autoAssocNetOutput, glintResult);
+        //  new net '21x5x21_643.4.net', 20130325:
+        computeTosaQuality(rlTosa, expAutoAssocNetOutput, glintResult);
         final double tosaQualityIndicator = glintResult.getTosaQualityIndicator();
         if (tosaQualityIndicator > tosaOosThresh) {
             glintResult.raiseFlag(TOSA_OOS);
@@ -180,7 +189,7 @@ public class GlintCorrection extends AbstractGlintCorrection {
             final double[] normReflec = new double[reflec.length];
             for (int i = 0; i < 12; i++) {
 //                normReflec[i] = Math.exp(normOutNet[i]);
-                normReflec[i] = Math.exp(normOutNet[i])/Math.PI;   // norm reflec must be WITHOUT PI (see mail from CB, 20130320)!
+                normReflec[i] = Math.exp(normOutNet[i]) / Math.PI;   // norm reflec must be WITHOUT PI (see mail from CB, 20130320)!
             }
             glintResult.setNormReflec(normReflec);
         }

@@ -106,15 +106,21 @@ public class GlintCorrectionOperator extends Operator {
     // another new net from RD, 2012/06/08:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_72066.8.net";
     public static final String FLINT_ATMOSPHERIC_NET_NAME = "atmo_correct_flint/25x30x40_6936.3.net";
-    public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/31x47x37_31103.9.net";
+
+
+    // new net from RD, 2013/03/25:
+    public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/97x77x37_326185.2.net";
+//    public static final String INV_AOT_ANG_NET_NAME = "inv_aotang/31x47x37_31103.9.net";
 
     // finally, switched back to the old NORMALIZATION NET (2012/08/02)
     public static final String NORMALIZATION_NET_NAME = "atmo_normalization/90_2.8.net";
     // new net from RD, 2012/07/16:
 //    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/23x17_29.6.net";
 
+    // finally (again): new net from RD, 2013/03/25:
+    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_643.4.net";
     // finally, switched back to the old AANN NET (2012/08/02)
-    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_20.4.net";
+//    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_20.4.net";
     // new net from RD, 2012/07/16:
 //    public static final String ATMO_AANN_NET_NAME = "atmo_aann/23x5x23_96.0.net";
 
