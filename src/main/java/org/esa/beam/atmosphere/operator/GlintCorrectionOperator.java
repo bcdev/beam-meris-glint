@@ -60,7 +60,7 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.4-CC",
+                  version = "1.4.3-CC-SNAPSHOT",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
