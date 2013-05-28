@@ -98,7 +98,8 @@ public class GlintCorrectionOperator extends Operator {
     // another new net from RD, 2012/11/28:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_134765.0.net";
     // another new net from RD, 2013/03/08:
-    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/37x77x97_100157.4.net";
+    public static final String MERIS_ATMOSPHERIC_EXTREME_NET_NAME = "atmo_correct_meris/37x77x97_100157.4.net";
+    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x77_103733.7.net";
     // another new net from RD, 2012/06/28:
 //    public static final String MERIS_ATMOSPHERIC_NET_NAME = "atmo_correct_meris/31x47x37_57596.9.net";
     // another new net from RD, 2012/06/18:
@@ -118,7 +119,8 @@ public class GlintCorrectionOperator extends Operator {
 //    public static final String NORMALIZATION_NET_NAME = "atmo_normalization/23x17_29.6.net";
 
     // finally (again): new net from RD, 2013/03/25:
-    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_643.4.net";
+    public static final String ATMO_AANN_EXTREME_NET_NAME = "atmo_aann/21x5x21_643.4.net";
+    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_262.5.net";
     // finally, switched back to the old AANN NET (2012/08/02)
 //    public static final String ATMO_AANN_NET_NAME = "atmo_aann/21x5x21_20.4.net";
     // new net from RD, 2012/07/16:
@@ -272,7 +274,7 @@ public class GlintCorrectionOperator extends Operator {
     private double tosaOosThresh;
 
     @Parameter(label = "MERIS net (full path required for other than default)",
-               defaultValue = MERIS_ATMOSPHERIC_NET_NAME,
+               defaultValue = MERIS_ATMOSPHERIC_EXTREME_NET_NAME,
                description = "The file of the atmospheric net to be used instead of the default neural net.",
                notNull = false)
     private File atmoNetMerisFile;
@@ -399,7 +401,7 @@ public class GlintCorrectionOperator extends Operator {
         toaValidationProduct = validationOp.getTargetProduct();
         validationBand = toaValidationProduct.getBandAt(0);
 
-        InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_NET_NAME, atmoNetMerisFile);
+        InputStream merisNeuralNetStream = getNeuralNetStream(MERIS_ATMOSPHERIC_EXTREME_NET_NAME, atmoNetMerisFile);
         merisNeuralNetString = readNeuralNetFromStream(merisNeuralNetStream);
 
         InputStream invAotAngNeuralNetStream = getNeuralNetStream(INV_AOT_ANG_NET_NAME, invAotAngNetFile);
@@ -414,7 +416,7 @@ public class GlintCorrectionOperator extends Operator {
             normalizationNeuralNetString = readNeuralNetFromStream(neuralNetStream);
         }
 
-        InputStream aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_NET_NAME, autoassociativeNetFile);
+        InputStream aannNeuralNetStream = getNeuralNetStream(ATMO_AANN_EXTREME_NET_NAME, autoassociativeNetFile);
         atmoAaNeuralNetString = readNeuralNetFromStream(aannNeuralNetStream);
 
         if (doSmileCorrection) {
@@ -891,10 +893,16 @@ public class GlintCorrectionOperator extends Operator {
 
     private InputStream getNeuralNetStream(String resourceNetName, File neuralNetFile) {
         InputStream neuralNetStream;
+        final String neuralNetFilePath = neuralNetFile.getPath().replace(File.separator, "/");
         if (neuralNetFile.equals((new File(resourceNetName)))) {
+            // the default NN
             neuralNetStream = getClass().getResourceAsStream(resourceNetName);
+        } else if (getClass().getResourceAsStream(neuralNetFilePath) != null) {
+            // an optional NN which is available in the resources
+            neuralNetStream = getClass().getResourceAsStream(neuralNetFilePath);
         } else {
             try {
+                // an optional NN elsewhere (full path!)
                 neuralNetStream = new FileInputStream(neuralNetFile);
             } catch (FileNotFoundException e) {
                 throw new OperatorException(e);
