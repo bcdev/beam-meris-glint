@@ -140,8 +140,8 @@ public class GlintCorrectionOperator extends Operator {
 
     public static final String ANG_443_865 = "ang_443_865";
     public static final String TAU_550 = "tau_550";
-    public static final String TAU_778 = "tau_778";
-    public static final String TAU_865 = "tau_865";
+    public static final String TAU_778 = "tau_778";      // currently not used
+    public static final String TAU_865 = "tau_865";      // currently not used
     public static final String GLINT_RATIO = "glint_ratio";
     public static final String FLINT_VALUE = "flint_value";
     public static final String BTSM = "b_tsm";
@@ -598,10 +598,10 @@ public class GlintCorrectionOperator extends Operator {
         angTile.setElemDoubleAt(pixelIndex, glintResult.getAngstrom());
         final ProductData tau550Tile = targetSampleData.get(TAU_550);
         tau550Tile.setElemDoubleAt(pixelIndex, glintResult.getTau550());
-        final ProductData tau778Tile = targetSampleData.get(TAU_778);
-        tau778Tile.setElemDoubleAt(pixelIndex, glintResult.getTau778());
-        final ProductData tau865Tile = targetSampleData.get(TAU_865);
-        tau865Tile.setElemDoubleAt(pixelIndex, glintResult.getTau865());
+//        final ProductData tau778Tile = targetSampleData.get(TAU_778);
+//        tau778Tile.setElemDoubleAt(pixelIndex, glintResult.getTau778());
+//        final ProductData tau865Tile = targetSampleData.get(TAU_865);
+//        tau865Tile.setElemDoubleAt(pixelIndex, glintResult.getTau865());
         if (flintProduct == null) {
             // glint ratio available as output only for 'non-flint' case (RD, 28.10.09)
             final ProductData glintTile = targetSampleData.get(GLINT_RATIO);
@@ -819,10 +819,10 @@ public class GlintCorrectionOperator extends Operator {
         product.setAutoGrouping(sb.toString());
         final Band tau550 = addNonSpectralTargetBand(product, TAU_550, "Spectral aerosol optical depth at 550", "dl");
         tau550.setSpectralWavelength(550);
-        final Band tau778 = addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
-        tau778.setSpectralWavelength(778);
-        final Band tau865 = addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
-        tau865.setSpectralWavelength(865);
+//        final Band tau778 = addNonSpectralTargetBand(product, TAU_778, "Spectral aerosol optical depth at 778", "dl");
+//        tau778.setSpectralWavelength(778);
+//        final Band tau865 = addNonSpectralTargetBand(product, TAU_865, "Spectral aerosol optical depth at 865", "dl");
+//        tau865.setSpectralWavelength(865);
 
         if (outputTosa || outputTosaQualityIndicator) {
             addNonSpectralTargetBand(product, QUALITY_INDICATOR_BAND_NAME, "Input spectrum out of range check",
