@@ -56,13 +56,13 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.2.2",
+                  version = "1.2.3",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.2.2";
+    public static final String GLINT_CORRECTION_VERSION = "1.2.3";
 
     private static final String AGC_FLAG_BAND_NAME = "agc_flags";
     private static final String RADIANCE_MERIS_BAND_NAME = "result_radiance_rr89";
@@ -633,13 +633,16 @@ public class GlintCorrectionOperator extends Operator {
         }
         if (outputReflec) {
             String reflecType;
+            final String reflecUnit;
             if (ReflectanceEnum.RADIANCE_REFLECTANCES.equals(outputReflecAs)) {
                 reflecType = "radiance";
+                reflecUnit = "sr^-1";
             } else {
                 reflecType = "irradiance";
+                reflecUnit = "dl";
             }
             String descriptionPattern = "Water leaving " + reflecType + " reflectance at {0} nm";
-            addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
+            addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, reflecUnit);
             groupList.add("reflec");
 
         }
