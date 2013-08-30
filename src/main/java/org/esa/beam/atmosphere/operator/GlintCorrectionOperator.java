@@ -66,7 +66,7 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.4-CC";
+    public static final String GLINT_CORRECTION_VERSION = "1.4.3-CC";
 
     public static final int COASTLINE_BIT_INDEX = 1;
     public static final int CLOUD_BIT_INDEX = 2;
@@ -230,7 +230,7 @@ public class GlintCorrectionOperator extends Operator {
     @Parameter(defaultValue = "IRRADIANCE_REFLECTANCES", valueSet = {"RADIANCE_REFLECTANCES", "IRRADIANCE_REFLECTANCES"},
                label = "Output water leaving reflectance as",
                description = "Select if reflectances shall be written as radiances or irradiances. " +
-                       "The irradiances are compatible with standard MERIS product.")
+                             "The irradiances are compatible with standard MERIS product.")
     private ReflectanceEnum outputReflecAs;
 
     @Parameter(defaultValue = "true", label = "Output path reflectance",
@@ -260,7 +260,7 @@ public class GlintCorrectionOperator extends Operator {
 
     @Parameter(label = "Use climatology map for salinity and temperature", defaultValue = "true",
                description = "By default a climatology map is used. If set to 'false' the specified average values are used " +
-                       "for the whole scene.")
+                             "for the whole scene.")
     private boolean useSnTMap;
 
     @Parameter(label = "Average salinity", defaultValue = "35", unit = "PSU", description = "The salinity of the water")
@@ -380,7 +380,7 @@ public class GlintCorrectionOperator extends Operator {
         ProductUtils.copyGeoCoding(merisProduct, outputProduct);
         // copy altitude band if it exists and 'beam.envisat.usePixelGeoCoding' is set to true
         if (Boolean.getBoolean("beam.envisat.usePixelGeoCoding") &&
-                merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
+            merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
             Band targetBand = ProductUtils.copyBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME, merisProduct,
                                                     outputProduct, true);
         }
@@ -463,7 +463,7 @@ public class GlintCorrectionOperator extends Operator {
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle targetRectangle, ProgressMonitor pm) throws
-            OperatorException {
+                                                                                                             OperatorException {
         pm.beginTask("Correcting atmosphere...", targetRectangle.height);
         try {
             final Map<String, ProductData> merisSampleDataMap = preLoadMerisSources(targetRectangle);
@@ -783,13 +783,16 @@ public class GlintCorrectionOperator extends Operator {
         }
         if (outputReflec) {
             String reflecType;
+            final String reflecUnit;
             if (ReflectanceEnum.RADIANCE_REFLECTANCES.equals(outputReflecAs)) {
                 reflecType = "radiance";
+                reflecUnit = "sr^-1";
             } else {
                 reflecType = "irradiance";
+                reflecUnit = "dl";
             }
             String descriptionPattern = "Water leaving " + reflecType + " reflectance at {0} nm";
-            addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, "sr^-1");
+            addSpectralTargetBands(product, REFLEC_BAND_NAMES, descriptionPattern, reflecUnit);
             groupList.add("reflec");
 
         }
@@ -880,7 +883,7 @@ public class GlintCorrectionOperator extends Operator {
         maskGroup.add(createMask(product, "l2r_invalid", "'L2R invalid' pixels (quality indicator > 3 || CLOUD)",
                                  "agc_flags.L2R_INVALID", Color.BLACK, 0.5f));
         maskGroup.add(createMask(product, "l2r_suspect", "'L2R suspect' pixels " +
-                "(quality indicator > 1 && (CLOUD || CLOUD_BUFFER || CLOUD_SHADOW || SNOW_ICE || MIXED_PIXEL))",
+                                                         "(quality indicator > 1 && (CLOUD || CLOUD_BUFFER || CLOUD_SHADOW || SNOW_ICE || MIXED_PIXEL))",
                                  "agc_flags.L2R_SUSPECT", new Color(255, 204, 0), 0.5f));
     }
 
