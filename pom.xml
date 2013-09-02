@@ -150,8 +150,8 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <debug>true</debug>
-                    <fork>true</fork>
-                    <encoding>ISO-8859-1</encoding>
+                    <fork>false</fork>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
