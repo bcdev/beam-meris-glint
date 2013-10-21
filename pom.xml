@@ -57,11 +57,16 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <beam.version>4.11.1-SNAPSHOT</beam.version>
+        <jnn.version>1.7</jnn.version>
     </properties>
+
     <dependencies>
 
-        <!-- Ceres System Level Module ############################################# -->
-
+        <dependency>
+            <groupId>com.bc.jnn</groupId>
+            <artifactId>jnn</artifactId>
+            <version>${jnn.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-core</artifactId>
