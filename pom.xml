@@ -122,7 +122,7 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-waterradiance-auxdata</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam.glint</groupId>
