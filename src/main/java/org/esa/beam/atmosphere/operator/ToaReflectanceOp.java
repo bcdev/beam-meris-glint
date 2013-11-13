@@ -32,7 +32,7 @@ import java.util.Map;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "FieldCanBeLocal"})
 @OperatorMetadata(alias = "Meris.AgcRad2Refl",
-                  version = "0.1",
+                  version = "1.4.4-CC",
                   internal = true,
                   authors = "Marco Peters",
                   copyright = "(c) 2008 by Brockmann Consult",

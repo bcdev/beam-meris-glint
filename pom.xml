@@ -4,7 +4,7 @@
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-glint</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.3-CC</version>
+    <version>1.4.4-CC-SNAPSHOT</version>
     <name>MERIS Glint Project</name>
 
     <pluginRepositories>
@@ -127,12 +127,12 @@
         <dependency>
             <groupId>org.esa.beam.glint</groupId>
             <artifactId>flint-processor</artifactId>
-            <version>1.2</version>
+            <version>1.2.1</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-meris-l2auxdata</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.4</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

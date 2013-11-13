@@ -31,7 +31,7 @@ import java.util.List;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "FieldCanBeLocal"})
 @OperatorMetadata(alias = "Meris.AgcToaReflValid",
-                  version = "0.1",
+                  version = "1.4.4-CC",
                   internal = true,
                   authors = "Marco Peters",
                   copyright = "(c) 2007 by Brockmann Consult",
