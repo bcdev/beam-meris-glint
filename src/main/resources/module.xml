@@ -30,6 +30,8 @@
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.4.4<br/>
+        Increased version beam-meris-l2auxdata and flint-processor
         <p>Changes in version 1.4.3<br/>
         [AGC-2] Water leaving irradiance reflectances have wrong unit
         <p>Changes in version 1.4<br/>
