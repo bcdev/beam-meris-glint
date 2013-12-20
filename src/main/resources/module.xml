@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.4.4-CC</version>
+    <version>1.4.5-CC</version>
     <name>MERIS Glint Correction</name>
 
     <description>
@@ -30,6 +30,8 @@
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.4.5<br/>
+        Enabled output RADIANCE/IRRADIANCE reflectance toggle
         <p>Changes in version 1.4.4<br/>
         Increased version beam-meris-l2auxdata and flint-processor
         <p>Changes in version 1.4.3<br/>

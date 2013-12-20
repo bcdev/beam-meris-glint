@@ -60,13 +60,13 @@ import static org.esa.beam.dataio.envisat.EnvisatConstants.*;
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "MismatchedReadAndWriteOfArray"})
 @OperatorMetadata(alias = "Meris.GlintCorrection",
-                  version = "1.4.4-CC",
+                  version = "1.4.5-CC",
                   authors = "Marco Peters, Roland Doerffer, Olaf Danne",
                   copyright = "(c) 2008 by Brockmann Consult",
                   description = "MERIS atmospheric correction using a neural net.")
 public class GlintCorrectionOperator extends Operator {
 
-    public static final String GLINT_CORRECTION_VERSION = "1.4.4-CC";
+    public static final String GLINT_CORRECTION_VERSION = "1.4.5-CC";
 
     public static final int COASTLINE_BIT_INDEX = 1;
     public static final int CLOUD_BIT_INDEX = 2;

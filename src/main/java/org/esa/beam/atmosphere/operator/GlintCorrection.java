@@ -169,10 +169,9 @@ public class GlintCorrection extends AbstractGlintCorrection {
         atmoNetOutput = NeuralNetIOConverter.convertExponential(atmoNetOutput);
 
         final double[] reflec = Arrays.copyOfRange(atmoNetOutput, 0, 12);
+
         if (ReflectanceEnum.IRRADIANCE_REFLECTANCES.equals(outputReflecAs)) {
-            glintResult.setReflec(reflec);
-            // changed on 20130321, current net 37x77x97_100157.4 gives rw, so multiply with PI (see mail from CB, 20130320)!
-//            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec)); // irradiance reflectance, comparable with MERIS
+            glintResult.setReflec(NeuralNetIOConverter.multiplyPi(reflec));
         } else {
             glintResult.setReflec(reflec);
         }
