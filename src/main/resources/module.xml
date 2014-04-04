@@ -15,9 +15,9 @@
             <p>Documentation:</p>
 
             <ul>
-                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_agc_atbd.pdf">Glint Correction with MERIS (ATBD 1)</a></li>
-                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_flint_atbd.pdf">Glint Correction with MERIS and AATSR (ATBD 2)</a></li>
-                <li><a href="http://github.com/downloads/bcdev/beam-meris-aatsr-flint/glint_sum.pdf">Software User Manual (SUM)</a></li>
+                <li><a href="http://org.esa.beam.s3.amazonaws.com/docs/beam/beam-meris-glint/glint_agc_atbd.pdf">Glint Correction with MERIS (ATBD 1)</a></li>
+                <li><a href="http://org.esa.beam.s3.amazonaws.com/docs/beam/beam-meris-glint/glint_flint_atbd.pdf">Glint Correction with MERIS and AATSR (ATBD 2)</a></li>
+                <li><a href="http://org.esa.beam.s3.amazonaws.com/docs/beam/beam-meris-glint/glint_sum.pdf">Software User Manual (SUM)</a></li>
             </ul>
     ]]>
     </description>
@@ -30,8 +30,9 @@
 
     <changelog>
         <![CDATA[
-        <p>Changes in version 1.2.2<br/>
-        [AGC-2] Water leaving irradiance reflectances have wrong unit
+        <p>Changes in version 1.2.3<br/>
+        [AGC-3] Integrate the flint processor into the glint processor<br/>
+        [AGC-2] Water leaving irradiance reflectances have wrong unit<br/>
         <p>Changes in version 1.2.2<br/>
         [AGC-1] Altitude band is not copied for MER_FSG products if 'beam.envisat.usePixelGeoCoding' is set to true
         <p>Changes in version 1.2.1<br/>
@@ -65,7 +66,16 @@
         <module>beam-meris-radiometry</module>
     </dependency>
     <dependency>
-        <module>flint-processor</module>
+        <module>beam-meris-brr</module>
+    </dependency>
+    <dependency>
+        <module>beam-meris-l2auxdata</module>
+    </dependency>
+    <dependency>
+        <module>beam-meris-sdr</module>
+    </dependency>
+    <dependency>
+        <module>beam-collocation</module>
     </dependency>
 
     <categories>Processor,MERIS</categories>
