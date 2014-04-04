@@ -15,91 +15,21 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
-import org.esa.beam.util.logging.BeamLogManager;
 
 import java.awt.Rectangle;
-import java.util.logging.Logger;
 
 /**
  * Operator for FUB Glint processing ('FLINT').
  *
  * @author Olaf Danne
- * @version $Revision: 5451 $ $Date: 2009-06-05 18:36:49 +0200 (Fr, 05 Jun 2009) $
  */
 @OperatorMetadata(alias = "glint.Flint",
                   version = "1.2.1",
-                  authors = "Olaf Danne",
-                  copyright = "(c) 2009 by Brockmann Consult",
-                  description = "Flint Processor.")
+                  authors = "Jürgen Fischer and Rene Preusker (FUB), Olaf Danne (BC)",
+                  copyright = "(c) 2014 by Brockmann Consult",
+                  description = "Flint Processor.",
+                  internal = true)
 public class FlintOp extends Operator {
-
-    @SourceProduct(alias = "l1bCollocate",
-                   description = "MERIS/AATSR collocation product.")
-    private Product collocateProduct;
-
-    @TargetProduct(description = "The target product.")
-    private Product targetProduct;
-
-    @Parameter(defaultValue = "false",
-               label = "Water Vapour")
-    boolean writeWaterVapour;
-
-    @Parameter(defaultValue = "false",
-               label = "Transmission at 3.7um")
-    boolean writeTransmission37;
-
-    @Parameter(defaultValue = "false",
-               label = "Transmission at 1.6um")
-    boolean writeTransmission16;
-
-    @Parameter(defaultValue = "false",
-               label = "Thermal Part of Radiance at 3.7um")
-    boolean writeThermalPart37;
-
-    @Parameter(defaultValue = "false",
-               label = "Solar Part of Radiance at 3.7um")
-    boolean writeSolarPart37;
-
-    @Parameter(defaultValue = "false",
-               label = "Solar Part of Radiance at 3.7um (AATSR Units)")
-    boolean writeSolarPart37AatsrUnits;
-
-    @Parameter(defaultValue = "false",
-               label = "Number of Effective Windspeeds")
-    boolean writeNumberEffectiveWindspeeds;
-
-    @Parameter(defaultValue = "false",
-               label = "Effective Windspeed 1")
-    boolean writeEffectiveWindspeed1;
-
-    @Parameter(defaultValue = "false",
-               label = "Effective Windspeed 2")
-    boolean writeEffectiveWindspeed2;
-
-    @Parameter(defaultValue = "false",
-               label = "Radiance 1")
-    boolean writeRadiance1;
-
-    @Parameter(defaultValue = "false",
-               label = "Radiance 2")
-    boolean writeRadiance2;
-
-    @Parameter(defaultValue = "false",
-               label = "Effective Windspeed (Final Result)")
-    boolean writeEffectiveWindspeedFinal;
-
-    @Parameter(defaultValue = "true",
-               label = "Normalized Radiance (Final Result)")
-    boolean writeNormalizedRadianceFinal;
-
-    private static final String INVALID_EXPRESSION = "l1_flags_M.INVALID";
-    private Band invalidBand;
-
-    /* AATSR L1 Cloud Flags (just the ones needed) */
-    final int AATSR_L1_CF_LAND = 0;
-    final int AATSR_L1_CF_CLOUDY = 1;
-    final int AATSR_L1_CF_SUNGLINT = 2;
-
     public static final String CONFID_NADIR_FLAGS = "confid_flags_nadir_S";
     public static final String CONFID_FWARD_FLAGS = "confid_flags_fward_S";
     public static final String CLOUD_NADIR_FLAGS = "cloud_flags_nadir_S";
@@ -126,6 +56,59 @@ public class FlintOp extends Operator {
     public static final String RESULT_WINDSPEED_FINAL_NAME = "result_windspeed_wsss";
     public static final String RESULT_RADIANCE_FINAL_NAME = "result_radiance_rr89";
 
+    @SourceProduct(alias = "l1bCollocate", description = "MERIS/AATSR collocation product.")
+    private Product collocateProduct;
+
+    @TargetProduct(description = "The target product.")
+    private Product targetProduct;
+
+    @Parameter(defaultValue = "false", label = "Water Vapour")
+    private boolean writeWaterVapour;
+
+    @Parameter(defaultValue = "false", label = "Transmission at 3.7um")
+    private boolean writeTransmission37;
+
+    @Parameter(defaultValue = "false", label = "Transmission at 1.6um")
+    private boolean writeTransmission16;
+
+    @Parameter(defaultValue = "false", label = "Thermal Part of Radiance at 3.7um")
+    private boolean writeThermalPart37;
+
+    @Parameter(defaultValue = "false", label = "Solar Part of Radiance at 3.7um")
+    private boolean writeSolarPart37;
+
+    @Parameter(defaultValue = "false", label = "Solar Part of Radiance at 3.7um (AATSR Units)")
+    private boolean writeSolarPart37AatsrUnits;
+
+    @Parameter(defaultValue = "false", label = "Number of Effective Windspeeds")
+    private boolean writeNumberEffectiveWindspeeds;
+
+    @Parameter(defaultValue = "false", label = "Effective Windspeed 1")
+    private boolean writeEffectiveWindspeed1;
+
+    @Parameter(defaultValue = "false", label = "Effective Windspeed 2")
+    private boolean writeEffectiveWindspeed2;
+
+    @Parameter(defaultValue = "false", label = "Radiance 1")
+    private boolean writeRadiance1;
+
+    @Parameter(defaultValue = "false", label = "Radiance 2")
+    private boolean writeRadiance2;
+
+    @Parameter(defaultValue = "false", label = "Effective Windspeed (Final Result)")
+    private boolean writeEffectiveWindspeedFinal;
+
+    @Parameter(defaultValue = "true", label = "Normalized Radiance (Final Result)")
+    private boolean writeNormalizedRadianceFinal;
+
+    private static final String INVALID_EXPRESSION = "l1_flags_M.INVALID";
+    private Band invalidBand;
+
+    /* AATSR L1 Cloud Flags (just the ones needed) */
+    static final int AATSR_L1_CF_LAND = 0;
+    static final int AATSR_L1_CF_CLOUDY = 1;
+    static final int AATSR_L1_CF_SUNGLINT = 2;
+
     private FlintPreparation preparation;
     private FlintSolarPart37 solarPart37;
     private FlintSolarPart37WaterVapour solarPart37WaterVapour;
@@ -133,11 +116,11 @@ public class FlintOp extends Operator {
 
     private float solarIrradiance37;
 
-    private Logger logger;
     private Tile vaMerisTileComplete;
     private Tile vaAatsrNadirTileComplete;
 
 
+    @Override
     public void initialize() throws OperatorException {
 
         preparation = new FlintPreparation();
@@ -145,7 +128,6 @@ public class FlintOp extends Operator {
         solarPart37WaterVapour = new FlintSolarPart37WaterVapour();
         geometricalConversion = new FlintGeometricalConversion();
 
-        logger = BeamLogManager.getSystemLogger();
         // todo: check if we need sth. like this!
 //        collocateProduct.setPreferredTileSize(400, 400);
 
@@ -431,10 +413,10 @@ public class FlintOp extends Operator {
                             }
                         }
 
-                        if (targetBand.getName().equals("va_aatsr_corr")) {
+                        if ("va_aatsr_corr".equals(targetBand.getName())) {
                             targetTile.setSample(x, y, vaAatsrNadirTileComplete.getSampleFloat(x, y));
                         }
-                        if (targetBand.getName().equals("va_meris_corr")) {
+                        if ("va_meris_corr".equals(targetBand.getName())) {
                             targetTile.setSample(x, y, vaMerisTileComplete.getSampleFloat(x, y));
                         }
 
