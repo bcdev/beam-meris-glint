@@ -62,6 +62,7 @@ public class ToaReflectanceValidationOp extends Operator {
     public static ToaReflectanceValidationOp create(Product sourceProduct, String landExpression,
                                                     String cloudIceExpression) {
         final ToaReflectanceValidationOp validationOp = new ToaReflectanceValidationOp();
+        validationOp.setParameterDefaultValues();
         validationOp.sourceProduct = sourceProduct;
         validationOp.landExpression = landExpression;
         validationOp.cloudIceExpression = cloudIceExpression;

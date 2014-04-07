@@ -51,6 +51,7 @@ public class ToaReflectanceOp extends Operator {
     public static ToaReflectanceOp create(Product sourceProduct) {
 
         final ToaReflectanceOp op = new ToaReflectanceOp();
+        op.setParameterDefaultValues();
         op.sourceProduct = sourceProduct;
         return op;
     }
