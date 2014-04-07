@@ -14,7 +14,6 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
 import java.text.MessageFormat;
@@ -76,9 +75,7 @@ public class ToaReflectanceOp extends Operator {
         }
         ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
 
-        BandMathsOp bandArithmeticOp = BandMathsHelper.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
-        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-
+        invalidBand = BandMathsHelper.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
     }
 
     @Override
