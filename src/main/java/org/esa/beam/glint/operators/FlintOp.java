@@ -1,6 +1,7 @@
 package org.esa.beam.glint.operators;
 
 import com.bc.ceres.core.ProgressMonitor;
+import org.esa.beam.BandMathsHelper;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
@@ -13,7 +14,6 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
 import java.awt.Rectangle;
@@ -178,9 +178,7 @@ public class FlintOp extends Operator {
         ProductUtils.copyMetadata(collocateProduct, targetProduct);
 //        setFlagBands();
 
-        BandMathsOp bandArithmeticOp =
-                BandMathsOp.createBooleanExpressionBand(INVALID_EXPRESSION, collocateProduct);
-        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        invalidBand = BandMathsHelper.createBooleanExpressionBand(INVALID_EXPRESSION, collocateProduct);
 
         setTargetBands();
     }

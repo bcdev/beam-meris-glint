@@ -1,7 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.glevel.MultiLevelImage;
+import org.esa.beam.BandMathsHelper;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -26,10 +26,6 @@ import java.util.Map;
 
 /**
  * Operator for TOA reflectance computation.
- *
- * @author Marco Peters
- * @version $Revision: 2703 $ $Date: 2010-01-21 13:51:07 +0100 (Do, 21 Jan 2010) $
- * @since BEAM 4.2
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "FieldCanBeLocal"})
 @OperatorMetadata(alias = "Meris.AgcRad2Refl",
@@ -65,7 +61,7 @@ public class ToaReflectanceOp extends Operator {
         validateSourceProduct(sourceProduct);
         targetProduct = createCompatibleProduct(sourceProduct, String.format("%s_TOA", sourceProduct.getName()),
                                                 "MER_AGC_TOA_REFL");
-        bandMap = new HashMap<Band, Band>(EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS);
+        bandMap = new HashMap<>(EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS);
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
 
             final Band toaReflBand = targetProduct.addBand(String.format(TOA_REFL_PATTERN, i + 1),
@@ -78,22 +74,11 @@ public class ToaReflectanceOp extends Operator {
 
             bandMap.put(toaReflBand, radianceBand);
         }
-        ProductUtils.copyFlagBands(sourceProduct, targetProduct);
-        copyFlagSourceImages();
+        ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
 
-        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
+        BandMathsOp bandArithmeticOp = BandMathsHelper.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
 
-    }
-
-    private void copyFlagSourceImages() {
-        final Band[] bands = targetProduct.getBands();
-        for (Band band : bands) {
-            if (band.isFlagBand()) {
-                final MultiLevelImage sourceFlagImage = sourceProduct.getBand(band.getName()).getSourceImage();
-                band.setSourceImage(sourceFlagImage);
-            }
-        }
     }
 
     @Override
@@ -149,7 +134,7 @@ public class ToaReflectanceOp extends Operator {
             String message = MessageFormat.format("Missing required band: {0}", missedBand);
             throw new OperatorException(message);
         }
-        List<String> sourceNodeNameList = new ArrayList<String>();
+        List<String> sourceNodeNameList = new ArrayList<>();
         sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         if (!sourceNodeNameList.contains(SOLZEN_GRID_NAME)) {

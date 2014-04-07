@@ -1,6 +1,7 @@
 package org.esa.beam.atmosphere.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
+import org.esa.beam.BandMathsHelper;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -14,7 +15,6 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
 import java.text.MessageFormat;
@@ -25,9 +25,6 @@ import java.util.List;
 /**
  * Operator for validation of TOA reflectances.
  *
- * @author Marco Peters
- * @version $Revision: 2703 $ $Date: 2010-01-21 13:51:07 +0100 (Do, 21 Jan 2010) $
- * @since BEAM 4.2
  */
 @SuppressWarnings({"InstanceVariableMayNotBeInitialized", "FieldCanBeLocal"})
 @OperatorMetadata(alias = "Meris.AgcToaReflValid",
@@ -80,18 +77,14 @@ public class ToaReflectanceValidationOp extends Operator {
                                     sourceProduct.getSceneRasterHeight());
         final Product reflProduct = ToaReflectanceOp.create(sourceProduct).getTargetProduct();
         for (String bandName : EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES) {
-            final Band band = ProductUtils.copyBand(bandName, sourceProduct, reflProduct);
-            band.setSourceImage(sourceProduct.getBand(bandName).getSourceImage());
+            ProductUtils.copyBand(bandName, sourceProduct, bandName, reflProduct, true);
         }
 
-        BandMathsOp landWaterOp = BandMathsOp.createBooleanExpressionBand(landExpression, reflProduct);
-        landWaterBand = landWaterOp.getTargetProduct().getBandAt(0);
+        landWaterBand = BandMathsHelper.createBooleanExpressionBand(landExpression, reflProduct);
 
-        BandMathsOp cloudIceOp = BandMathsOp.createBooleanExpressionBand(cloudIceExpression, reflProduct);
-        cloudIceBand = cloudIceOp.getTargetProduct().getBandAt(0);
+        cloudIceBand = BandMathsHelper.createBooleanExpressionBand(cloudIceExpression, reflProduct);
 
-        BandMathsOp rlToaOorOp = BandMathsOp.createBooleanExpressionBand(rlToaOorExpression, reflProduct);
-        rlToaOorBand = rlToaOorOp.getTargetProduct().getBandAt(0);
+        rlToaOorBand = BandMathsHelper.createBooleanExpressionBand(rlToaOorExpression, reflProduct);
 
         final FlagCoding flagCoding = new FlagCoding("rlToa_flags");
         flagCoding.addFlag("land", LAND_FLAG_MASK, "Pixel is land");
@@ -144,9 +137,8 @@ public class ToaReflectanceValidationOp extends Operator {
         } finally {
             pm.done();
         }
-
-
     }
+
 
     private static void validateSourceProduct(final Product product) {
         final String missedBand = validateProductBands(product);
@@ -177,7 +169,7 @@ public class ToaReflectanceValidationOp extends Operator {
     }
 
     private static String validateProductTpgs(Product product) {
-        List<String> sourceNodeNameList = new ArrayList<String>();
+        List<String> sourceNodeNameList = new ArrayList<>();
         sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : EnvisatConstants.MERIS_TIE_POINT_GRID_NAMES) {
