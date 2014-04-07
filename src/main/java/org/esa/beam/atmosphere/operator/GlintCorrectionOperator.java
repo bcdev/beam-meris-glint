@@ -250,16 +250,16 @@ public class GlintCorrectionOperator extends Operator {
 
         if (useFlint && aatsrProduct != null) {
             // create collocation product...
-            Map<String, Product> collocateInput = new HashMap<String, Product>(2);
+            Map<String, Product> collocateInput = new HashMap<>(2);
             collocateInput.put("masterProduct", merisProduct);
             collocateInput.put("slaveProduct", aatsrProduct);
             Product collocateProduct =
                     GPF.createProduct(OperatorSpi.getOperatorAlias(CollocateOp.class), GPF.NO_PARAMS, collocateInput);
 
             // create FLINT product
-            Map<String, Product> flintInput = new HashMap<String, Product>(1);
+            Map<String, Product> flintInput = new HashMap<>(1);
             flintInput.put("l1bCollocate", collocateProduct);
-            Map<String, Object> flintParameters = new HashMap<String, Object>();
+            Map<String, Object> flintParameters = new HashMap<>();
             flintProduct = GPF.createProduct(OperatorSpi.getOperatorAlias(FlintOp.class), flintParameters, flintInput);
             validateFlintProduct(flintProduct);
         }
@@ -290,7 +290,7 @@ public class GlintCorrectionOperator extends Operator {
         // copy altitude band if it exists and 'beam.envisat.usePixelGeoCoding' is set to true
         if (Boolean.getBoolean("beam.envisat.usePixelGeoCoding") &&
             merisProduct.containsBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME)) {
-            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME);
+            ProductUtils.copyBand(EnvisatConstants.MERIS_AMORGOS_L1B_ALTIUDE_BAND_NAME, merisProduct, outputProduct, true);
         }
 
         setTargetProduct(outputProduct);
@@ -329,19 +329,13 @@ public class GlintCorrectionOperator extends Operator {
             }
         }
         nadirColumnIndex = MerisFlightDirection.findNadirColumnIndex(merisProduct);
-        isFullResolution = isProductMerisFullResoultion(merisProduct);
+        isFullResolution = isProductMerisFullResolution(merisProduct);
 
-        ProductUtils.copyFlagBands(merisProduct, outputProduct);
-        for (Band srcBand : merisProduct.getBands()) {
-            if (srcBand.getFlagCoding() != null) {
-                Band targetBand = outputProduct.getBand(srcBand.getName());
-                targetBand.setSourceImage(srcBand.getSourceImage());
-            }
-        }
+        ProductUtils.copyFlagBands(merisProduct, outputProduct, true);
 
         // copy detector index band
         if (merisProduct.containsBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME)) {
-            copyBandWithImage(outputProduct, EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
+            ProductUtils.copyBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME, merisProduct, outputProduct, true);
         }
         setTargetProduct(outputProduct);
     }
@@ -406,13 +400,7 @@ public class GlintCorrectionOperator extends Operator {
 
     }
 
-    private void copyBandWithImage(Product outputProduct, String bandName) {
-        Band targetBand = ProductUtils.copyBand(bandName, merisProduct, outputProduct);
-        Band sourceBand = merisProduct.getBand(bandName);
-        targetBand.setSourceImage(sourceBand.getSourceImage());
-    }
-
-    private static boolean isProductMerisFullResoultion(final Product product) {
+    private static boolean isProductMerisFullResolution(final Product product) {
         final String productType = product.getProductType();
         return productType.contains("FR") || productType.contains("FSG");
     }
@@ -437,7 +425,7 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private static Map<String, ProductData> getTargetSampleData(Map<Band, Tile> targetTiles) {
-        final Map<String, ProductData> map = new HashMap<String, ProductData>(targetTiles.size());
+        final Map<String, ProductData> map = new HashMap<>(targetTiles.size());
         for (Map.Entry<Band, Tile> bandTileEntry : targetTiles.entrySet()) {
             final Band band = bandTileEntry.getKey();
             final Tile tile = bandTileEntry.getValue();
@@ -550,7 +538,7 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private Map<String, ProductData> preLoadMerisSources(Rectangle targetRectangle) {
-        final Map<String, ProductData> map = new HashMap<String, ProductData>(27);
+        final Map<String, ProductData> map = new HashMap<>(27);
 
         final Tile validationTile = getSourceTile(validationBand, targetRectangle);
         map.put(validationBand.getName(), validationTile.getRawSamples());
@@ -834,7 +822,7 @@ public class GlintCorrectionOperator extends Operator {
 
 
     private static String validateMerisProductTpgs(Product product) {
-        List<String> sourceNodeNameList = new ArrayList<String>();
+        List<String> sourceNodeNameList = new ArrayList<>();
         sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_MERIS_TPG_NAMES) {
@@ -847,7 +835,7 @@ public class GlintCorrectionOperator extends Operator {
     }
 
     private static String validateAatsrProductTpgs(Product product) {
-        List<String> sourceNodeNameList = new ArrayList<String>();
+        List<String> sourceNodeNameList = new ArrayList<>();
         sourceNodeNameList.addAll(Arrays.asList(product.getTiePointGridNames()));
         sourceNodeNameList.addAll(Arrays.asList(product.getBandNames()));
         for (String tpgName : REQUIRED_AATSR_TPG_NAMES) {
