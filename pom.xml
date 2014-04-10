@@ -57,7 +57,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <beam.version>5.0-SNAPSHOT</beam.version>
-        <jnn.version>1.7</jnn.version>
     </properties>
 
     <dependencies>
@@ -65,7 +64,7 @@
         <dependency>
             <groupId>com.bc.jnn</groupId>
             <artifactId>jnn</artifactId>
-            <version>${jnn.version}</version>
+            <version>1.7</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>

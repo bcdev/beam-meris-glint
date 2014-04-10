@@ -82,13 +82,11 @@
 
     <extension point="beam-ui:actions">
         <action>
+            <parent>processing.thematicWater</parent>
             <id>correctAtmosphericGlint</id>
             <class>org.esa.beam.atmosphere.ui.GlintAction</class>
-            <text>Glint Correction (MERIS/(A)ATSR)...</text>
-            <shortDescr>Performs a glint correction on the selected Product</shortDescr>
-            <longDescr>Performs a glint and atmospheric correction over water on the selected Product</longDescr>
-            <mnemonic/>
-            <parent>tools</parent>
+            <text>MERIS/(A)ATSR Glint Correction...</text>
+            <shortDescr>Performs a glint and atmospheric correction over water on the selected Product</shortDescr>
             <helpId>merisGlint</helpId>
         </action>
     </extension>
