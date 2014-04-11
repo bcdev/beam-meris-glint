@@ -720,7 +720,7 @@ public class GlintCorrectionOperator extends Operator {
 
     private InputStream getNeuralNetStream(String resourceNetName, File neuralNetFile) {
         InputStream neuralNetStream;
-        if (resourceNetName.contains(neuralNetFile.getName())) {
+        if (neuralNetFile == null || resourceNetName.contains(neuralNetFile.getName())) {
             neuralNetStream = getClass().getResourceAsStream(resourceNetName);
         } else {
             try {
