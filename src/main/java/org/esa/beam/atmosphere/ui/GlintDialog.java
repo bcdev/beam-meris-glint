@@ -179,7 +179,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         TableLayout layout = new TableLayout(1);
         layout.setTableAnchor(TableLayout.Anchor.WEST);
         layout.setTableFill(TableLayout.Fill.HORIZONTAL);
-        layout.setTableWeightX(1);
+        layout.setTableWeightX(1.0);
 
         JPanel panel = new JPanel(layout);
         panel.setBorder(BorderFactory.createTitledBorder(null, "AATSR (FLINT) Product Usage",
