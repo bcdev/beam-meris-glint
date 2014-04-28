@@ -21,6 +21,7 @@ import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.annotations.ParameterDescriptorFactory;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.descriptor.OperatorDescriptor;
 import org.esa.beam.framework.gpf.internal.RasterDataNodeValues;
 import org.esa.beam.framework.gpf.ui.OperatorMenu;
 import org.esa.beam.framework.gpf.ui.OperatorParameterSupport;
@@ -78,8 +79,8 @@ public class GlintDialog extends SingleTargetProductDialog {
             throw new IllegalArgumentException("operatorName");
         }
 
-        sourceProductSelectorList = new ArrayList<SourceProductSelector>(3);
-        sourceProductSelectorMap = new HashMap<Field, SourceProductSelector>(3);
+        sourceProductSelectorList = new ArrayList<>(3);
+        sourceProductSelectorMap = new HashMap<>(3);
         // Fetch source products
         initSourceProductSelectors(operatorSpi);
         if (!sourceProductSelectorList.isEmpty()) {
@@ -110,7 +111,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         this.form.add("I/O Parameters", ioParametersPanel);
 
         ParameterDescriptorFactory parameterDescriptorFactory = new ParameterDescriptorFactory();
-        parameterMap = new HashMap<String, Object>(17);
+        parameterMap = new HashMap<>(17);
         propertyContainer = PropertyContainer.createMapBacked(parameterMap,
                                                               operatorSpi.getOperatorClass(),
                                                               parameterDescriptorFactory);
@@ -119,7 +120,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         if (propertyContainer.getProperties().length > 0) {
             if (!sourceProductSelectorList.isEmpty()) {
                 Property[] properties = propertyContainer.getProperties();
-                List<PropertyDescriptor> rdnTypeProperties = new ArrayList<PropertyDescriptor>(properties.length);
+                List<PropertyDescriptor> rdnTypeProperties = new ArrayList<>(properties.length);
                 for (Property property : properties) {
                     PropertyDescriptor parameterDescriptor = property.getDescriptor();
                     if (parameterDescriptor.getAttribute(RasterDataNodeValues.ATTRIBUTE_NAME) != null) {
@@ -131,13 +132,13 @@ public class GlintDialog extends SingleTargetProductDialog {
             }
 
             PropertyPane parametersPane = new PropertyPane(propertyContainer);
-            final JPanel paremetersPanel = parametersPane.createPanel();
-            Component[] components = paremetersPanel.getComponents();
+            final JPanel parametersPanel = parametersPane.createPanel();
+            Component[] components = parametersPanel.getComponents();
 
             for (int i = 0; i < components.length - 1; i++) {
                 if (components[i] instanceof JCheckBox && ((JCheckBox) components[i]).getText().startsWith(
                         "Use FLINT value")) {
-                    JCheckBox useFlintCheckBox = (JCheckBox) paremetersPanel.getComponents()[i];
+                    JCheckBox useFlintCheckBox = (JCheckBox) parametersPanel.getComponents()[i];
                     useFlintCheckBox.setEnabled(false);
                 }
                 if (components[i] instanceof JLabel && ((JLabel) components[i]).getText().startsWith("FLINT net")) {
@@ -148,8 +149,8 @@ public class GlintDialog extends SingleTargetProductDialog {
                 }
             }
 
-            paremetersPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
-            this.form.add("Processing Parameters", new JScrollPane(paremetersPanel));
+            parametersPanel.setBorder(new EmptyBorder(4, 4, 4, 4));
+            this.form.add("Processing Parameters", new JScrollPane(parametersPanel));
         }
         if (!sourceProductSelectorList.isEmpty()) {
             productChangedHandler = new ProductChangedHandler();
@@ -166,12 +167,13 @@ public class GlintDialog extends SingleTargetProductDialog {
             });
         }
 
-        final OperatorParameterSupport parameterSupport = new OperatorParameterSupport(operatorSpi.getOperatorClass(),
+        OperatorDescriptor operatorDescriptor = operatorSpi.getOperatorDescriptor();
+        final OperatorParameterSupport parameterSupport = new OperatorParameterSupport(operatorDescriptor,
                                                                                        propertyContainer,
                                                                                        parameterMap,
                                                                                        null);
-        OperatorMenu menuSupport = new OperatorMenu(this.getJDialog(), operatorSpi.getOperatorClass(),
-                                                    parameterSupport, helpID);
+        OperatorMenu menuSupport = new OperatorMenu(this.getJDialog(), operatorDescriptor,
+                                                    parameterSupport, appContext, helpID);
         getJDialog().setJMenuBar(menuSupport.createDefaultMenu());
     }
 
@@ -275,7 +277,7 @@ public class GlintDialog extends SingleTargetProductDialog {
         if (propertyContainer != null) {
             for (Property property : propertyContainer.getProperties()) {
                 // set 'useFlint' parameter according to useFlintProductCheckBox:
-                if (property.getDescriptor().getName().equals("useFlint")) {
+                if ("useFlint".equals(property.getDescriptor().getName())) {
                     try {
                         property.setValue(useFlintProductCheckBox.isSelected());
                         if (flintNetPanel != null) {
@@ -330,7 +332,7 @@ public class GlintDialog extends SingleTargetProductDialog {
     }
 
     private HashMap<String, Product> createSourceProductsMap() {
-        final HashMap<String, Product> sourceProducts = new HashMap<String, Product>(8);
+        final HashMap<String, Product> sourceProducts = new HashMap<>(8);
         for (Field field : sourceProductSelectorMap.keySet()) {
             final SourceProductSelector selector = sourceProductSelectorMap.get(field);
             String key = field.getName();
