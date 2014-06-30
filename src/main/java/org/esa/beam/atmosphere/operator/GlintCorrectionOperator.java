@@ -404,17 +404,28 @@ public class GlintCorrectionOperator extends Operator {
     static boolean isProductMerisFullResolution(final Product product) {
         String productType = null;
         MetadataElement metadataRoot = product.getMetadataRoot();
-        MetadataElement globalAttributes = metadataRoot.getElement("Global_Attributes");
-        if(globalAttributes != null)         {
-            MetadataAttribute attribute = globalAttributes.getAttribute("product_type");
-            if(attribute != null) {
-                productType = attribute.getData().getElemString();
+
+        final MetadataElement sph = metadataRoot.getElement("SPH");
+        if(sph != null) {
+            final MetadataAttribute sphDescriptor = sph.getAttribute("SPH_DESCRIPTOR");
+            if(sphDescriptor != null) {
+                productType = sphDescriptor.getData().getElemString();
+            }
+        }
+        if (productType == null) {
+            MetadataElement globalAttributes = metadataRoot.getElement("Global_Attributes");
+            if(globalAttributes != null)         {
+                MetadataAttribute attribute = globalAttributes.getAttribute("product_type");
+                if(attribute != null) {
+                    productType = attribute.getData().getElemString();
+                }
             }
         }
         if(productType == null) {
             productType = product.getProductType();
         }
-        return productType.contains("FR") || productType.contains("FSG");
+
+        return !productType.contains("RR");
     }
 
     private double getFlintValue(int pixelX, int pixelY) {

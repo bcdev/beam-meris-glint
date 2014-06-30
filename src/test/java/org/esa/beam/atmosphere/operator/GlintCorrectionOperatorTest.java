@@ -37,4 +37,22 @@ public class GlintCorrectionOperatorTest {
         assertTrue(GlintCorrectionOperator.isProductMerisFullResolution(product));
     }
 
+    @Test
+    public void testIsProductMerisFullResolution_FromSPH() throws Exception {
+        Product product = new Product("dummy", "type", 2, 2);
+        MetadataElement sphElement = new MetadataElement("SPH");
+        product.getMetadataRoot().addElement(sphElement);
+
+        MetadataAttribute sphDescriptorAttribute = new MetadataAttribute("SPH_DESCRIPTOR", ProductData.createInstance("MER_RR__1P SPECIFIC HEADER"),
+                                                                        false);
+        sphElement.addAttribute(sphDescriptorAttribute);
+        assertFalse(GlintCorrectionOperator.isProductMerisFullResolution(product));
+
+        sphElement.removeAttribute(sphDescriptorAttribute);
+
+        sphDescriptorAttribute = new MetadataAttribute("SPH_DESCRIPTOR", ProductData.createInstance("MER_FSG_1P SPECIFIC HEADER"), false);
+        sphElement.addAttribute(sphDescriptorAttribute);
+        assertTrue(GlintCorrectionOperator.isProductMerisFullResolution(product));
+
+    }
 }
