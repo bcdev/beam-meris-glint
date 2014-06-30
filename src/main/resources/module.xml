@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-glint</symbolicName>
-    <version>1.2.3</version>
+    <version>1.2.4</version>
     <name>MERIS Glint Correction</name>
 
     <description>
@@ -23,32 +23,20 @@
     </description>
 
     <vendor>Brockmann Consult GmbH</vendor>
-    <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
-    <copyright>(C) 2007 by Brockmann Consult GmbH</copyright>
+    <contactAddress>Max Planck Str. 2, 21502 Geesthacht (Germany)</contactAddress>
+    <copyright>(C) 2014 by Brockmann Consult GmbH</copyright>
     <url>http://envisat.esa.int/beam</url>
     <licenseUrl>http://www.gnu.org/licenses/gpl.html</licenseUrl>
 
     <changelog>
         <![CDATA[
+        <p>Changes in version 1.2.4<br/>
+        - [AGC-4] CoastColour L1P can not be used as source<br/>
         <p>Changes in version 1.2.3<br/>
-        [AGC-3] Integrate the flint processor into the glint processor<br/>
-        [AGC-2] Water leaving irradiance reflectances have wrong unit<br/>
+        - [AGC-3] Integrate the flint processor into the glint processor<br/>
+        - [AGC-2] Water leaving irradiance reflectances have wrong unit<br/>
         <p>Changes in version 1.2.2<br/>
-        [AGC-1] Altitude band is not copied for MER_FSG products if 'beam.envisat.usePixelGeoCoding' is set to true
-        <p>Changes in version 1.2.1<br/>
-        - reflectances can be written as radiance reflectances or irradiance reflectances
-        - normalised reflectances can be written as additional output
-        <p>Changes in version 1.2<br/>
-        - added groups for spectral bands
-        - added optional normalization of bidirectional reflectances to nadir
-        - added optional smile corrections
-        - new neural net for MERIS with better frequency distribution of IOPs, extended domain of concentrations
-          and correction for calculation of transmission
-        - Made Glint Correction thread safe
-        - introduce flag agc_flags.INVALID combining agc_flags.LAND, agc_flags.CLOUD_ICE and l1_flags.INVALID
-        - better default expressions for land and cloud/ice detection
-        - copying start and stop time of meris source product
-        </p>
+        - [AGC-1] Altitude band is not copied for MER_FSG products if 'beam.envisat.usePixelGeoCoding' is set to true<br/>
         ]]>
     </changelog>
 

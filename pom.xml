@@ -4,7 +4,7 @@
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-glint</artifactId>
     <packaging>jar</packaging>
-    <version>1.2.3</version>
+    <version>1.2.4-SNAPSHOT</version>
     <name>MERIS Glint Project</name>
 
     <pluginRepositories>
@@ -56,7 +56,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <beam.version>5.0</beam.version>
+        <beam.version>[5.0,5.1-SNAPSHOT)</beam.version>
     </properties>
 
     <dependencies>

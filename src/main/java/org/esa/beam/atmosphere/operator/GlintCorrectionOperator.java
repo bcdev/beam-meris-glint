@@ -9,6 +9,7 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
 import org.esa.beam.framework.datamodel.Mask;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
+import org.esa.beam.framework.datamodel.MetadataElement;
 import org.esa.beam.framework.datamodel.PixelPos;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
@@ -400,8 +401,19 @@ public class GlintCorrectionOperator extends Operator {
 
     }
 
-    private static boolean isProductMerisFullResolution(final Product product) {
-        final String productType = product.getProductType();
+    static boolean isProductMerisFullResolution(final Product product) {
+        String productType = null;
+        MetadataElement metadataRoot = product.getMetadataRoot();
+        MetadataElement globalAttributes = metadataRoot.getElement("Global_Attributes");
+        if(globalAttributes != null)         {
+            MetadataAttribute attribute = globalAttributes.getAttribute("product_type");
+            if(attribute != null) {
+                productType = attribute.getData().getElemString();
+            }
+        }
+        if(productType == null) {
+            productType = product.getProductType();
+        }
         return productType.contains("FR") || productType.contains("FSG");
     }
 
